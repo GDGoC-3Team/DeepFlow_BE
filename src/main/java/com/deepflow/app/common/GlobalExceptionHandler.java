@@ -1,5 +1,6 @@
 package com.deepflow.app.common;
 
+import com.google.firebase.auth.FirebaseAuthException;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
@@ -18,26 +19,32 @@ public class GlobalExceptionHandler {
                 .findFirst()
                 .map(error -> error.getField() + ": " + error.getDefaultMessage())
                 .orElse("Validation failed");
-        return ResponseEntity.badRequest().body(ApiResponse.error(message));
+        return ResponseEntity.badRequest().body(ApiResponse.error(ErrorCode.VALIDATION_ERROR, message));
     }
 
     @ExceptionHandler(ConstraintViolationException.class)
     public ResponseEntity<ApiResponse<Void>> handleConstraint(ConstraintViolationException exception) {
-        return ResponseEntity.badRequest().body(ApiResponse.error(exception.getMessage()));
+        return ResponseEntity.badRequest().body(ApiResponse.error(ErrorCode.VALIDATION_ERROR, exception.getMessage()));
     }
 
     @ExceptionHandler(EntityNotFoundException.class)
     public ResponseEntity<ApiResponse<Void>> handleNotFound(EntityNotFoundException exception) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error(exception.getMessage()));
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ApiResponse.error(ErrorCode.NOT_FOUND, exception.getMessage()));
     }
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ApiResponse<Void>> handleAccessDenied(AccessDeniedException exception) {
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.error(exception.getMessage()));
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(ApiResponse.error(ErrorCode.ACCESS_DENIED, exception.getMessage()));
+    }
+
+    @ExceptionHandler(FirebaseAuthException.class)
+    public ResponseEntity<ApiResponse<Void>> handleFirebaseAuth(FirebaseAuthException exception) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(ApiResponse.error(ErrorCode.AUTH_TOKEN_INVALID, "Invalid Firebase ID token"));
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiResponse<Void>> handleBadRequest(IllegalArgumentException exception) {
-        return ResponseEntity.badRequest().body(ApiResponse.error(exception.getMessage()));
+        return ResponseEntity.badRequest().body(ApiResponse.error(ErrorCode.BAD_REQUEST, exception.getMessage()));
     }
 }
