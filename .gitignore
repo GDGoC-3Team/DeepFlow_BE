@@ -9,3 +9,5 @@ out/
 
 logs/
 *.log
+
+src/main/resources/firebase-credentials.json

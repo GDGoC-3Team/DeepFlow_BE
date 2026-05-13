@@ -36,7 +36,7 @@ public class FirebaseTokenFilter extends OncePerRequestFilter {
             try {
                 FirebaseToken token = FirebaseAuth.getInstance().verifyIdToken(authorization.substring(7));
                 UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                        token.getUid(),
+                        new FirebasePrincipal(token.getUid(), token.getEmail()),
                         null,
                         List.of(new SimpleGrantedAuthority("ROLE_USER"))
                 );
