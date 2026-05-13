@@ -1,6 +1,8 @@
 package com.deepflow.app.domain.settings;
 
 import com.deepflow.app.domain.user.User;
+import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -32,7 +34,9 @@ public class UserSetting {
 
     private LocalTime notificationTime;
 
-    private String fontFamily;
+    @Column(columnDefinition = "ENUM('NANUM_MYEONGJO','KOPUB_BATANG','NOTO_SANS')")
+    @Convert(converter = FontFamilyConverter.class)
+    private FontFamily fontFamily;
 
     private int fontSize;
 
@@ -41,8 +45,8 @@ public class UserSetting {
         setting.user = user;
         setting.notificationEnabled = true;
         setting.notificationTime = LocalTime.of(8, 0);
-        setting.fontFamily = "system";
-        setting.fontSize = 16;
+        setting.fontFamily = FontFamily.NANUM_MYEONGJO;
+        setting.fontSize = 18;
         return setting;
     }
 
@@ -53,7 +57,7 @@ public class UserSetting {
         if (request.notificationTime() != null) {
             this.notificationTime = request.notificationTime();
         }
-        if (request.fontFamily() != null && !request.fontFamily().isBlank()) {
+        if (request.fontFamily() != null) {
             this.fontFamily = request.fontFamily();
         }
         if (request.fontSize() != null) {
