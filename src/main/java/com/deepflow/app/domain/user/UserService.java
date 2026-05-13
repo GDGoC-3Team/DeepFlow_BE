@@ -1,6 +1,6 @@
 package com.deepflow.app.domain.user;
 
-import com.google.firebase.auth.FirebaseToken;
+import com.deepflow.app.auth.FirebasePrincipal;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
@@ -14,18 +14,19 @@ public class UserService {
     private final UserRepository userRepository;
 
     @Transactional
-    public User upsertFromFirebase(FirebaseToken token, String nickname, String fcmToken) {
-        String email = token.getEmail() == null ? "" : token.getEmail();
+    public User upsertFromFirebase(FirebasePrincipal principal, String nickname, String fcmToken) {
+        String uid = principal.uid();
+        String email = principal.email() == null ? "" : principal.email();
         String resolvedNickname = nickname != null && !nickname.isBlank()
                 ? nickname
-                : defaultNickname(email, token.getUid());
-        return userRepository.findByFirebaseUid(token.getUid())
+                : defaultNickname(email, uid);
+        return userRepository.findByFirebaseUid(uid)
                 .map(user -> {
                     user.updateFromFirebase(email, resolvedNickname, fcmToken);
                     return user;
                 })
                 .orElseGet(() -> userRepository.save(User.builder()
-                        .firebaseUid(token.getUid())
+                        .firebaseUid(uid)
                         .email(email)
                         .nickname(resolvedNickname)
                         .fcmToken(fcmToken)

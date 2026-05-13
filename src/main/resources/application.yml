@@ -19,9 +19,6 @@ spring:
       pool:
         size: 5
 
-firebase:
-  credentials: ${FIREBASE_CREDENTIALS_JSON}
-
 cloud:
   aws:
     s3:

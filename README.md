@@ -56,3 +56,33 @@ Firebase credentials are loaded from:
 ```text
 src/main/resources/firebase-credentials.json
 ```
+
+The backend expects the client app to complete Google sign-in with Firebase and send the Firebase ID token to:
+
+```http
+POST /auth/login
+Authorization: Bearer <firebase-id-token>
+Content-Type: application/json
+
+{
+  "nickname": "optional",
+  "fcmToken": "optional"
+}
+```
+
+After login, call protected APIs with the same header format:
+
+```http
+Authorization: Bearer <firebase-id-token>
+```
+
+Error responses include a stable `code` field for client branching:
+
+```json
+{
+  "success": false,
+  "data": null,
+  "code": "AUTH_TOKEN_INVALID",
+  "message": "Invalid Firebase ID token"
+}
+```
