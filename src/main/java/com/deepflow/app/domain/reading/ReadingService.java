@@ -5,7 +5,7 @@ import com.deepflow.app.domain.book.BookPage;
 import com.deepflow.app.domain.book.BookPageRepository;
 import com.deepflow.app.domain.book.BookRepository;
 import com.deepflow.app.domain.user.User;
-import com.deepflow.app.domain.user.UserRepository;
+import com.deepflow.app.domain.user.UserService;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -24,12 +24,12 @@ public class ReadingService {
     private final PageTimeRepository pageTimeRepository;
     private final BookRepository bookRepository;
     private final BookPageRepository bookPageRepository;
-    private final UserRepository userRepository;
+    private final UserService userService;
 
+    // 독서 세션 시작
     @Transactional
     public ReadingSession startSession(String firebaseUid, Long bookId) {
-        User user = findUser(firebaseUid);
-        // TODO: Daily reset: query ReadingSession by date = today (KST). Reset at 00:00 KST.
+        User user = userService.getByFirebaseUid(firebaseUid);
         Book book = bookRepository.findById(bookId)
                 .orElseThrow(() -> new EntityNotFoundException("Book not found"));
         LocalDate todayKst = LocalDate.now(KST);
@@ -37,27 +37,27 @@ public class ReadingService {
                 .orElseGet(() -> readingRepository.save(ReadingSession.start(user, book, todayKst)));
     }
 
+    // 페이지 독서 시간 기록
     @Transactional
     public PageTime recordPageTime(String firebaseUid, PageTimeRequest request) {
-        User user = findUser(firebaseUid);
+        User user = userService.getByFirebaseUid(firebaseUid);
         ReadingSession session = getOwnedSession(user, request.sessionId());
         boolean reread = pageTimeRepository.findTopBySessionOrderByIdDesc(session)
                 .map(previous -> request.pageNumber() < previous.getPageNumber() && request.elapsedSeconds() > 3)
                 .orElse(false);
-        // TODO: Reread detection: if user navigates backward and stays on page > 3 seconds, set PageTime.isReread = true.
         return pageTimeRepository.save(PageTime.of(session, request.pageNumber(), request.elapsedSeconds(), reread));
     }
 
+    // 독서 결과 분석
     @Transactional(readOnly = true)
     public ReadingResultResponse result(String firebaseUid, Long sessionId) {
-        User user = findUser(firebaseUid);
+        User user = userService.getByFirebaseUid(firebaseUid);
         ReadingSession session = getOwnedSession(user, sessionId);
         List<PageTime> pageTimes = pageTimeRepository.findBySessionOrderByPageNumberAsc(session);
         double average = pageTimes.stream()
                 .mapToDouble(pageTime -> secondsPerCharacter(session.getBook(), pageTime))
                 .average()
                 .orElse(0.0);
-        // TODO: Concentration result: calculate avg time per character per page, flag outlier pages, return structured result.
         List<ReadingResultResponse.PageBreakdown> pages = pageTimes.stream()
                 .map(pageTime -> {
                     int characterCount = characterCount(session.getBook(), pageTime.getPageNumber());
@@ -76,37 +76,43 @@ public class ReadingService {
         return new ReadingResultResponse(session.getId(), average, pages);
     }
 
+    // 독서 완료 날짜 조회
     @Transactional(readOnly = true)
     public List<LocalDate> completedDates(String firebaseUid) {
-        User user = findUser(firebaseUid);
-        // TODO: Reading history calendar: group ReadingSession by date, return list of completed dates.
+        User user = userService.getByFirebaseUid(firebaseUid);
         return readingRepository.findCompletedDates(user);
     }
 
+    // 독서 습관 기록 - 해빗 트래커
     @Transactional(readOnly = true)
-    public int habitStreak(String firebaseUid) {
-        User user = findUser(firebaseUid);
-        // TODO: Habit tracker: count consecutive reading days up to max 7. If streak > 7, show real count but cap visual tracker at 7.
-        List<LocalDate> dates = readingRepository.findCompletedDates(user);
-        int streak = 0;
-        LocalDate cursor = LocalDate.now(KST);
-        for (int i = dates.size() - 1; i >= 0; i--) {
-            if (dates.get(i).equals(cursor)) {
-                streak++;
-                cursor = cursor.minusDays(1);
+    public HabbitResponse getReadingHabbit(String firebaseUid) {
+        User user = userService.getByFirebaseUid(firebaseUid);
+
+        // 1. 사용자가 독서 완료한 날짜 목록 확인
+        List<LocalDate> completedDates = readingRepository.findCompletedDates(user);
+
+        // 2. 완료 기록이 없으면 연속 기록은 0
+        if (completedDates.isEmpty()) {
+            return new HabbitResponse(0, 0);
+        }
+        int streakDays = 0;
+
+        // 3. 최근 날짜부터 거꾸로 순회하면서 연속 독서 여부 체크
+        LocalDate streakBaseDate = completedDates.get(completedDates.size() - 1);
+        for (int i = completedDates.size() - 1; i >= 0; i--) {
+            if (completedDates.get(i).equals(streakBaseDate)) {
+                streakDays++;
+                streakBaseDate = streakBaseDate.minusDays(1);
+            } else {
+                break;
             }
         }
-        return streak;
+
+        // 4. 최종 streak 반환
+        return new HabbitResponse(streakDays, Math.min(streakDays, 7));
     }
 
-    private User findUser(String firebaseUid) {
-        if (firebaseUid == null) {
-            throw new EntityNotFoundException("Authenticated user not found");
-        }
-        return userRepository.findByFirebaseUid(firebaseUid)
-                .orElseThrow(() -> new EntityNotFoundException("User not found"));
-    }
-
+    // 독서 세션 소유권 검증
     private ReadingSession getOwnedSession(User user, Long sessionId) {
         ReadingSession session = readingRepository.findById(sessionId)
                 .orElseThrow(() -> new EntityNotFoundException("Reading session not found"));
@@ -116,6 +122,7 @@ public class ReadingService {
         return session;
     }
 
+    // 페이지 체류시간 계산
     private double secondsPerCharacter(Book book, PageTime pageTime) {
         int characterCount = characterCount(book, pageTime.getPageNumber());
         if (characterCount == 0) {
@@ -124,6 +131,7 @@ public class ReadingService {
         return (double) pageTime.getElapsedSeconds() / characterCount;
     }
 
+    // 페이지 글자 수 조회
     private int characterCount(Book book, int pageNumber) {
         return bookPageRepository.findByBookAndPageNumber(book, pageNumber)
                 .map(BookPage::getCharacterCount)

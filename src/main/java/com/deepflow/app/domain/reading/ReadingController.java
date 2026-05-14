@@ -41,8 +41,8 @@ public class ReadingController {
         return ApiResponse.ok(readingService.completedDates(authentication.getName()));
     }
 
-    @GetMapping("/habit-streak")
-    public ApiResponse<Integer> habitStreak(Authentication authentication) {
-        return ApiResponse.ok(readingService.habitStreak(authentication.getName()));
+    @GetMapping("/habbit")
+    public ApiResponse<HabbitResponse> habbit(Authentication authentication) {
+        return ApiResponse.ok(readingService.getReadingHabbit(authentication.getName()));
     }
 }
