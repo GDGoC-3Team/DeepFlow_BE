@@ -1,8 +1,6 @@
 package com.deepflow.app.domain.reading;
 
 import com.deepflow.app.common.ApiResponse;
-import com.deepflow.app.domain.user.User;
-import com.deepflow.app.domain.user.UserService;
 import jakarta.validation.Valid;
 import java.time.LocalDate;
 import java.util.List;
@@ -21,36 +19,30 @@ import org.springframework.web.bind.annotation.RestController;
 public class ReadingController {
 
     private final ReadingService readingService;
-    private final UserService userService;
 
     @PostMapping("/start")
     public ApiResponse<ReadingSessionResponse> start(Authentication authentication, @Valid @RequestBody StartReadingRequest request) {
-        User user = userService.getCurrentUser(authentication.getName());
-        return ApiResponse.ok(ReadingSessionResponse.from(readingService.startSession(user, request.bookId())));
+        return ApiResponse.ok(ReadingSessionResponse.from(readingService.startSession(authentication.getName(), request.bookId())));
     }
 
     @PostMapping("/page-time")
     public ApiResponse<Void> pageTime(Authentication authentication, @Valid @RequestBody PageTimeRequest request) {
-        User user = userService.getCurrentUser(authentication.getName());
-        readingService.recordPageTime(user, request);
+        readingService.recordPageTime(authentication.getName(), request);
         return ApiResponse.ok(null, "Recorded");
     }
 
     @GetMapping("/result/{sessionId}")
     public ApiResponse<ReadingResultResponse> result(Authentication authentication, @PathVariable Long sessionId) {
-        User user = userService.getCurrentUser(authentication.getName());
-        return ApiResponse.ok(readingService.result(user, sessionId));
+        return ApiResponse.ok(readingService.result(authentication.getName(), sessionId));
     }
 
     @GetMapping("/history/dates")
     public ApiResponse<List<LocalDate>> completedDates(Authentication authentication) {
-        User user = userService.getCurrentUser(authentication.getName());
-        return ApiResponse.ok(readingService.completedDates(user));
+        return ApiResponse.ok(readingService.completedDates(authentication.getName()));
     }
 
     @GetMapping("/habit-streak")
     public ApiResponse<Integer> habitStreak(Authentication authentication) {
-        User user = userService.getCurrentUser(authentication.getName());
-        return ApiResponse.ok(readingService.habitStreak(user));
+        return ApiResponse.ok(readingService.habitStreak(authentication.getName()));
     }
 }

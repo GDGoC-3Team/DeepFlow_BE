@@ -5,6 +5,7 @@ import com.deepflow.app.domain.book.BookPage;
 import com.deepflow.app.domain.book.BookPageRepository;
 import com.deepflow.app.domain.book.BookRepository;
 import com.deepflow.app.domain.user.User;
+import com.deepflow.app.domain.user.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -23,9 +24,11 @@ public class ReadingService {
     private final PageTimeRepository pageTimeRepository;
     private final BookRepository bookRepository;
     private final BookPageRepository bookPageRepository;
+    private final UserRepository userRepository;
 
     @Transactional
-    public ReadingSession startSession(User user, Long bookId) {
+    public ReadingSession startSession(String firebaseUid, Long bookId) {
+        User user = findUser(firebaseUid);
         // TODO: Daily reset: query ReadingSession by date = today (KST). Reset at 00:00 KST.
         Book book = bookRepository.findById(bookId)
                 .orElseThrow(() -> new EntityNotFoundException("Book not found"));
@@ -35,7 +38,8 @@ public class ReadingService {
     }
 
     @Transactional
-    public PageTime recordPageTime(User user, PageTimeRequest request) {
+    public PageTime recordPageTime(String firebaseUid, PageTimeRequest request) {
+        User user = findUser(firebaseUid);
         ReadingSession session = getOwnedSession(user, request.sessionId());
         boolean reread = pageTimeRepository.findTopBySessionOrderByIdDesc(session)
                 .map(previous -> request.pageNumber() < previous.getPageNumber() && request.elapsedSeconds() > 3)
@@ -45,7 +49,8 @@ public class ReadingService {
     }
 
     @Transactional(readOnly = true)
-    public ReadingResultResponse result(User user, Long sessionId) {
+    public ReadingResultResponse result(String firebaseUid, Long sessionId) {
+        User user = findUser(firebaseUid);
         ReadingSession session = getOwnedSession(user, sessionId);
         List<PageTime> pageTimes = pageTimeRepository.findBySessionOrderByPageNumberAsc(session);
         double average = pageTimes.stream()
@@ -72,13 +77,15 @@ public class ReadingService {
     }
 
     @Transactional(readOnly = true)
-    public List<LocalDate> completedDates(User user) {
+    public List<LocalDate> completedDates(String firebaseUid) {
+        User user = findUser(firebaseUid);
         // TODO: Reading history calendar: group ReadingSession by date, return list of completed dates.
         return readingRepository.findCompletedDates(user);
     }
 
     @Transactional(readOnly = true)
-    public int habitStreak(User user) {
+    public int habitStreak(String firebaseUid) {
+        User user = findUser(firebaseUid);
         // TODO: Habit tracker: count consecutive reading days up to max 7. If streak > 7, show real count but cap visual tracker at 7.
         List<LocalDate> dates = readingRepository.findCompletedDates(user);
         int streak = 0;
@@ -90,6 +97,14 @@ public class ReadingService {
             }
         }
         return streak;
+    }
+
+    private User findUser(String firebaseUid) {
+        if (firebaseUid == null) {
+            throw new EntityNotFoundException("Authenticated user not found");
+        }
+        return userRepository.findByFirebaseUid(firebaseUid)
+                .orElseThrow(() -> new EntityNotFoundException("User not found"));
     }
 
     private ReadingSession getOwnedSession(User user, Long sessionId) {
