@@ -25,32 +25,32 @@ public class ReadingController {
 
     @PostMapping("/start")
     public ApiResponse<ReadingSessionResponse> start(Authentication authentication, @Valid @RequestBody StartReadingRequest request) {
-        User user = userService.getCurrentUser(authentication);
+        User user = userService.getCurrentUser(authentication.getName());
         return ApiResponse.ok(ReadingSessionResponse.from(readingService.startSession(user, request.bookId())));
     }
 
     @PostMapping("/page-time")
     public ApiResponse<Void> pageTime(Authentication authentication, @Valid @RequestBody PageTimeRequest request) {
-        User user = userService.getCurrentUser(authentication);
+        User user = userService.getCurrentUser(authentication.getName());
         readingService.recordPageTime(user, request);
         return ApiResponse.ok(null, "Recorded");
     }
 
     @GetMapping("/result/{sessionId}")
     public ApiResponse<ReadingResultResponse> result(Authentication authentication, @PathVariable Long sessionId) {
-        User user = userService.getCurrentUser(authentication);
+        User user = userService.getCurrentUser(authentication.getName());
         return ApiResponse.ok(readingService.result(user, sessionId));
     }
 
     @GetMapping("/history/dates")
     public ApiResponse<List<LocalDate>> completedDates(Authentication authentication) {
-        User user = userService.getCurrentUser(authentication);
+        User user = userService.getCurrentUser(authentication.getName());
         return ApiResponse.ok(readingService.completedDates(user));
     }
 
     @GetMapping("/habit-streak")
     public ApiResponse<Integer> habitStreak(Authentication authentication) {
-        User user = userService.getCurrentUser(authentication);
+        User user = userService.getCurrentUser(authentication.getName());
         return ApiResponse.ok(readingService.habitStreak(user));
     }
 }

@@ -23,7 +23,7 @@ public class UserSettingController {
     @GetMapping
     @Transactional
     public ApiResponse<UserSettingResponse> get(Authentication authentication) {
-        User user = userService.getCurrentUser(authentication);
+        User user = userService.getCurrentUser(authentication.getName());
         UserSetting setting = userSettingRepository.findByUser(user)
                 .orElseGet(() -> userSettingRepository.save(UserSetting.defaults(user)));
         return ApiResponse.ok(UserSettingResponse.from(setting));
@@ -32,7 +32,7 @@ public class UserSettingController {
     @PatchMapping
     @Transactional
     public ApiResponse<UserSettingResponse> update(Authentication authentication, @RequestBody UpdateUserSettingRequest request) {
-        User user = userService.getCurrentUser(authentication);
+        User user = userService.getCurrentUser(authentication.getName());
         UserSetting setting = userSettingRepository.findByUser(user)
                 .orElseGet(() -> userSettingRepository.save(UserSetting.defaults(user)));
         setting.update(request);

@@ -25,7 +25,7 @@ public class SavedSentenceController {
             Authentication authentication,
             @RequestParam(defaultValue = "latest") String sort
     ) {
-        User user = userService.getCurrentUser(authentication);
+        User user = userService.getCurrentUser(authentication.getName());
         List<SavedSentence> savedSentences = switch (sort) {
             case "date" -> savedSentenceRepository.findByUserOrderBySentenceDate(user);
             case "alphabet" -> savedSentenceRepository.findByUserOrderBySentenceContent(user);

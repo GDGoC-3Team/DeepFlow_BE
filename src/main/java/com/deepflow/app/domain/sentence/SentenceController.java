@@ -28,7 +28,7 @@ public class SentenceController {
 
     @PostMapping("/{id}/save")
     public ApiResponse<Boolean> save(Authentication authentication, @PathVariable Long id) {
-        User user = userService.getCurrentUser(authentication);
+        User user = userService.getCurrentUser(authentication.getName());
         return ApiResponse.ok(sentenceService.toggleSave(user, id));
     }
 }
