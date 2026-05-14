@@ -18,11 +18,12 @@ public class UserController {
 
     @GetMapping("/me")
     public ApiResponse<UserResponse> me(Authentication authentication) {
-        return ApiResponse.ok(UserResponse.from(userService.getCurrentUser(authentication)));
+        return ApiResponse.ok(userService.getMe(authentication.getName()));
     }
 
     @PatchMapping("/me")
-    public ApiResponse<UserResponse> updateMe(Authentication authentication, @RequestBody UpdateUserRequest request) {
-        return ApiResponse.ok(UserResponse.from(userService.updateCurrentUser(authentication, request)));
+    public ApiResponse<UserResponse> updateMe(Authentication authentication,
+                                              @RequestBody UpdateUserRequest request) {
+        return ApiResponse.ok(userService.updateMe(authentication.getName(), request));
     }
 }
