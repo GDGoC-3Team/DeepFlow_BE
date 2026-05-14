@@ -3,7 +3,7 @@ package com.deepflow.app.domain.sentence;
 import com.deepflow.app.domain.saved.SavedSentence;
 import com.deepflow.app.domain.saved.SavedSentenceRepository;
 import com.deepflow.app.domain.user.User;
-import com.deepflow.app.domain.user.UserRepository;
+import com.deepflow.app.domain.user.UserService;
 import jakarta.persistence.EntityNotFoundException;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +17,7 @@ public class SentenceService {
 
     private final SentenceRepository sentenceRepository;
     private final SavedSentenceRepository savedSentenceRepository;
-    private final UserRepository userRepository;
+    private final UserService userService;
 
     @Transactional(readOnly = true)
     public List<Sentence> randomFeed(int size) {
@@ -26,7 +26,7 @@ public class SentenceService {
 
     @Transactional
     public boolean toggleSave(String firebaseUid, Long sentenceId) {
-        User user = findUser(firebaseUid);
+        User user = userService.getByFirebaseUid(firebaseUid);
         // TODO: Save/unsave logic should stay idempotent for rapid repeated taps from the client.
         Sentence sentence = sentenceRepository.findById(sentenceId)
                 .orElseThrow(() -> new EntityNotFoundException("Sentence not found"));
@@ -39,13 +39,5 @@ public class SentenceService {
                     savedSentenceRepository.save(SavedSentence.of(user, sentence));
                     return true;
                 });
-    }
-
-    private User findUser(String firebaseUid) {
-        if (firebaseUid == null) {
-            throw new EntityNotFoundException("Authenticated user not found");
-        }
-        return userRepository.findByFirebaseUid(firebaseUid)
-                .orElseThrow(() -> new EntityNotFoundException("User not found"));
     }
 }

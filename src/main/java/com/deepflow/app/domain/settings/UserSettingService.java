@@ -1,8 +1,7 @@
 package com.deepflow.app.domain.settings;
 
 import com.deepflow.app.domain.user.User;
-import com.deepflow.app.domain.user.UserRepository;
-import jakarta.persistence.EntityNotFoundException;
+import com.deepflow.app.domain.user.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -12,7 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserSettingService {
 
     private final UserSettingRepository userSettingRepository;
-    private final UserRepository userRepository;
+    private final UserService userService;
 
     @Transactional
     public UserSettingResponse get(String firebaseUid) {
@@ -28,16 +27,8 @@ public class UserSettingService {
     }
 
     private UserSetting getOrCreateSetting(String firebaseUid) {
-        User user = findUser(firebaseUid);
+        User user = userService.getByFirebaseUid(firebaseUid);
         return userSettingRepository.findByUser(user)
                 .orElseGet(() -> userSettingRepository.save(UserSetting.defaults(user)));
-    }
-
-    private User findUser(String firebaseUid) {
-        if (firebaseUid == null) {
-            throw new EntityNotFoundException("Authenticated user not found");
-        }
-        return userRepository.findByFirebaseUid(firebaseUid)
-                .orElseThrow(() -> new EntityNotFoundException("User not found"));
     }
 }
