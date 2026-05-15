@@ -6,7 +6,8 @@ public record UserSettingResponse(
         Long id,
         boolean notificationEnabled,
         LocalTime notificationTime,
-        String fontFamily,
+        FontFamily fontFamily,
+        String fontFamilyDisplayName,
         int fontSize
 ) {
 
@@ -16,6 +17,7 @@ public record UserSettingResponse(
                 setting.isNotificationEnabled(),
                 setting.getNotificationTime(),
                 setting.getFontFamily(),
+                setting.getFontFamily().getDisplayName(),
                 setting.getFontSize()
         );
     }
