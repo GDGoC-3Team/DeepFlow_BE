@@ -119,9 +119,6 @@ jobs:
           SPRING_PROFILE: gcp
           MYSQL_DATABASE: deepflowdb
           MYSQL_ROOT_PASSWORD: ${{ secrets.DEV_MYSQL_ROOT_PASSWORD }}
-          # GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
-          # GCS_BUCKET: ${{ secrets.GCS_BUCKET }}
-          # GCS_CREDENTIALS_JSON: ${{ secrets.GCS_CREDENTIALS_JSON }}
         with:
           host: ${{ env.VM_HOST }}
           username: ${{ env.VM_USER }}
@@ -176,9 +173,6 @@ jobs:
             SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/$MYSQL_DATABASE
             SPRING_DATASOURCE_USERNAME=root
             SPRING_DATASOURCE_PASSWORD=$MYSQL_ROOT_PASSWORD
-            # GCP_PROJECT_ID=$GCP_PROJECT_ID
-            # GCS_BUCKET=$GCS_BUCKET
-            # GCS_CREDENTIALS_JSON=$GCS_CREDENTIALS_JSON
             EOF
 
             cat > docker-compose.dev.yml <<EOF
