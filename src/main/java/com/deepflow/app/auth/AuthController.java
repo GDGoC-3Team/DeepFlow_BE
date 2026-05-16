@@ -24,6 +24,11 @@ public class AuthController {
     public ApiResponse<UserResponse> login(Authentication authentication, @Valid @RequestBody LoginRequest request) {
         FirebasePrincipal principal = (FirebasePrincipal) authentication.getPrincipal();
         log.info("Firebase login verified. uid={}", principal.uid());
-        return ApiResponse.ok(UserResponse.from(userService.upsertFromFirebase(principal, request.nickname(), request.fcmToken())));
+        return ApiResponse.ok(UserResponse.from(userService.upsertFromFirebase(
+                principal.uid(),
+                principal.email(),
+                request.nickname(),
+                request.fcmToken()
+        )));
     }
 }

@@ -1,8 +1,6 @@
 package com.deepflow.app.domain.sentence;
 
 import com.deepflow.app.common.ApiResponse;
-import com.deepflow.app.domain.user.User;
-import com.deepflow.app.domain.user.UserService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
@@ -19,7 +17,6 @@ import org.springframework.web.bind.annotation.RestController;
 public class SentenceController {
 
     private final SentenceService sentenceService;
-    private final UserService userService;
 
     @GetMapping("/feed")
     public ApiResponse<List<SentenceResponse>> feed(@RequestParam(defaultValue = "10") int size) {
@@ -28,7 +25,6 @@ public class SentenceController {
 
     @PostMapping("/{id}/save")
     public ApiResponse<Boolean> save(Authentication authentication, @PathVariable Long id) {
-        User user = userService.getCurrentUser(authentication);
-        return ApiResponse.ok(sentenceService.toggleSave(user, id));
+        return ApiResponse.ok(sentenceService.toggleSave(authentication.getName(), id));
     }
 }

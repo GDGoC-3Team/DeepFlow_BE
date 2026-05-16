@@ -5,7 +5,7 @@ import java.time.LocalTime;
 public record UpdateUserSettingRequest(
         Boolean notificationEnabled,
         LocalTime notificationTime,
-        String fontFamily,
+        FontFamily fontFamily,
         Integer fontSize
 ) {
 }
