@@ -27,8 +27,6 @@ public class BookPage {
     @JoinColumn(name = "book_id")
     private Book book;
 
-    private int pageNumber;
-
     @Column(columnDefinition = "LONGTEXT")
     private String content;
 
