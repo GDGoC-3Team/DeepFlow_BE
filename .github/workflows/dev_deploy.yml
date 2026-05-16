@@ -65,6 +65,11 @@ jobs:
       - name: Export Docker image
         run: docker save ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.ARTIFACT_REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} -o deepflow-backend.tar
 
+      - name: Fix tar permission
+        run: |
+          sudo chown runner:docker deepflow-backend.tar || true
+          chmod 644 deepflow-backend.tar
+
       - name: Copy deployment files to VM
         uses: appleboy/scp-action@v0.1.7
         with:
