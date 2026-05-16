@@ -29,7 +29,7 @@ public class BookPage {
 
     private int pageNumber;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(columnDefinition = "LONGTEXT")
     private String content;
 
     private int characterCount;

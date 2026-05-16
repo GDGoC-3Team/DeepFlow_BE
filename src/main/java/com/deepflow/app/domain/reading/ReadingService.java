@@ -1,7 +1,6 @@
 package com.deepflow.app.domain.reading;
 
 import com.deepflow.app.domain.book.Book;
-import com.deepflow.app.domain.book.BookPage;
 import com.deepflow.app.domain.book.BookPageRepository;
 import com.deepflow.app.domain.book.BookRepository;
 import com.deepflow.app.domain.user.User;
@@ -42,8 +41,10 @@ public class ReadingService {
     public PageTime recordPageTime(String firebaseUid, PageTimeRequest request) {
         User user = userService.getByFirebaseUid(firebaseUid);
         ReadingSession session = getOwnedSession(user, request.sessionId());
+        int normalizedStartOffset = Math.max(0, request.startOffset());
+        int normalizedEndOffset = Math.max(normalizedStartOffset, request.endOffset());
         boolean reread = pageTimeRepository.findTopBySessionOrderByIdDesc(session)
-                .map(previous -> request.pageNumber() < previous.getPageNumber() && request.elapsedSeconds() > 3)
+                .map(previous -> normalizedStartOffset < previous.getEndOffset() && request.elapsedSeconds() > 3)
                 .orElse(false);
         return pageTimeRepository.save(PageTime.of(session, request.pageNumber(), request.elapsedSeconds(), reread));
     }
@@ -53,18 +54,20 @@ public class ReadingService {
     public ReadingResultResponse result(String firebaseUid, Long sessionId) {
         User user = userService.getByFirebaseUid(firebaseUid);
         ReadingSession session = getOwnedSession(user, sessionId);
-        List<PageTime> pageTimes = pageTimeRepository.findBySessionOrderByPageNumberAsc(session);
+        List<PageTime> pageTimes = pageTimeRepository.findBySessionOrderByStartOffsetAsc(session);
+
         double average = pageTimes.stream()
-                .mapToDouble(pageTime -> secondsPerCharacter(session.getBook(), pageTime))
+                .mapToDouble(this::secondsPerCharacter)
                 .average()
                 .orElse(0.0);
         List<ReadingResultResponse.PageBreakdown> pages = pageTimes.stream()
                 .map(pageTime -> {
-                    int characterCount = characterCount(session.getBook(), pageTime.getPageNumber());
+                    int characterCount = pageTime.getCharacterCount();
                     double secondsPerCharacter = characterCount == 0 ? 0.0 : (double) pageTime.getElapsedSeconds() / characterCount;
                     boolean outlier = average > 0.0 && secondsPerCharacter > average * 1.5;
-                    return new ReadingResultResponse.PageBreakdown(
-                            pageTime.getPageNumber(),
+                    return new ReadingResultResponse.SegmentBreakdown(
+                            pageTime.getStartOffset(),
+                            pageTime.getEndOffset(),
                             pageTime.getElapsedSeconds(),
                             characterCount,
                             secondsPerCharacter,
@@ -73,7 +76,20 @@ public class ReadingService {
                     );
                 })
                 .toList();
-        return new ReadingResultResponse(session.getId(), average, pages);
+
+        int totalCharacterCount = totalCharacterCount(session.getBook());
+        double progressPercent = totalCharacterCount == 0
+                ? 0.0
+                : Math.min(100.0, ((double) session.getMaxOffset() / totalCharacterCount) * 100.0);
+
+        return new ReadingResultResponse(
+                session.getId(),
+                session.getCurrentOffset(),
+                session.getMaxOffset(),
+                progressPercent,
+                average,
+                segments
+        );
     }
 
     // 독서 완료 날짜 조회
