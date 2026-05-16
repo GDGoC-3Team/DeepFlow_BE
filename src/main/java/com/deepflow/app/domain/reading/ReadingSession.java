@@ -2,6 +2,7 @@ package com.deepflow.app.domain.reading;
 
 import com.deepflow.app.domain.book.Book;
 import com.deepflow.app.domain.user.User;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -38,15 +39,28 @@ public class ReadingSession {
 
     private LocalDateTime completedAt;
 
+    @Column(nullable = false)
+    private int currentOffset;
+
+    @Column(nullable = false)
+    private int maxOffset;
+
     public static ReadingSession start(User user, Book book, LocalDate date) {
         ReadingSession session = new ReadingSession();
         session.user = user;
         session.book = book;
         session.date = date;
+        session.currentOffset = 0;
+        session.maxOffset = 0;
         return session;
     }
 
     public void complete() {
         this.completedAt = LocalDateTime.now();
+    }
+
+    public void updateProgress(int currentOffset, int maxOffset) {
+        this.currentOffset = Math.max(0, currentOffset);
+        this.maxOffset = Math.max(this.currentOffset, Math.max(0, maxOffset));
     }
 }

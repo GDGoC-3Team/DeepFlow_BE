@@ -27,7 +27,9 @@ public class Highlight {
     @JoinColumn(name = "session_id")
     private ReadingSession session;
 
-    private int pageNumber;
+    private int startOffset;
+
+    private int endOffset;
 
     @Column(columnDefinition = "TEXT")
     private String highlightedText;

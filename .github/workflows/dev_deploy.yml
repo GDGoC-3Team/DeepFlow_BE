@@ -1,0 +1,143 @@
+name: Dev Deploy
+
+on:
+  push:
+    branches: [develop]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+  REGION: ${{ vars.GCP_REGION }}
+  ARTIFACT_REPOSITORY: ${{ vars.GCP_ARTIFACT_REGISTRY_REPOSITORY }}
+  IMAGE_NAME: deepflow-backend
+  VM_HOST: ${{ vars.GCE_VM_HOST }}
+  VM_USER: ${{ vars.GCE_VM_USER }}
+  VM_PORT: ${{ vars.GCE_VM_PORT || '22' }}
+  DEPLOY_PATH: ${{ vars.GCE_DEPLOY_PATH || '/home/deploy/deepflow' }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Run tests
+        run: sh ./gradlew test --no-daemon
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.ARTIFACT_REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} \
+            -t ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.ARTIFACT_REPOSITORY }}/${{ env.IMAGE_NAME }}:develop \
+            .
+
+      - name: Push Docker image
+        run: |
+          docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.ARTIFACT_REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.ARTIFACT_REPOSITORY }}/${{ env.IMAGE_NAME }}:develop
+
+      - name: Export Docker image
+        run: docker save ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.ARTIFACT_REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} -o deepflow-backend.tar
+
+      - name: Copy deployment files to VM
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ env.VM_HOST }}
+          username: ${{ env.VM_USER }}
+          port: ${{ env.VM_PORT }}
+          key: ${{ secrets.GCE_SSH_PRIVATE_KEY }}
+          source: "src/main/resources/init.sql,src/main/resources/data.csv,deepflow-backend.tar"
+          target: ${{ env.DEPLOY_PATH }}
+          overwrite: true
+
+      - name: Deploy on Compute Engine VM
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          IMAGE_URI: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.ARTIFACT_REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          DEPLOY_PATH: ${{ env.DEPLOY_PATH }}
+          SPRING_PROFILE: gcp
+          MYSQL_DATABASE: deepflowdb
+          MYSQL_ROOT_PASSWORD: ${{ secrets.DEV_MYSQL_ROOT_PASSWORD }}
+          GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+          GCS_BUCKET: ${{ secrets.GCS_BUCKET }}
+          GCS_CREDENTIALS_JSON: ${{ secrets.GCS_CREDENTIALS_JSON }}
+        with:
+          host: ${{ env.VM_HOST }}
+          username: ${{ env.VM_USER }}
+          port: ${{ env.VM_PORT }}
+          key: ${{ secrets.GCE_SSH_PRIVATE_KEY }}
+          envs: IMAGE_URI,DEPLOY_PATH,SPRING_PROFILE,MYSQL_DATABASE,MYSQL_ROOT_PASSWORD,GCP_PROJECT_ID,GCS_BUCKET,GCS_CREDENTIALS_JSON
+          script: |
+            set -eu
+            mkdir -p "$DEPLOY_PATH"
+            cd "$DEPLOY_PATH"
+
+            cat > .env <<EOF
+            SPRING_PROFILES_ACTIVE=$SPRING_PROFILE
+            SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/$MYSQL_DATABASE
+            SPRING_DATASOURCE_USERNAME=root
+            SPRING_DATASOURCE_PASSWORD=$MYSQL_ROOT_PASSWORD
+            GCP_PROJECT_ID=$GCP_PROJECT_ID
+            GCS_BUCKET=$GCS_BUCKET
+            GCS_CREDENTIALS_JSON=$GCS_CREDENTIALS_JSON
+            EOF
+
+            cat > docker-compose.dev.yml <<EOF
+            services:
+              mysql:
+                image: mysql:8
+                container_name: deepflow-mysql
+                restart: unless-stopped
+                environment:
+                  MYSQL_DATABASE: $MYSQL_DATABASE
+                  MYSQL_ROOT_PASSWORD: $MYSQL_ROOT_PASSWORD
+                ports:
+                  - "3306:3306"
+                volumes:
+                  - mysql-data:/var/lib/mysql
+                  - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+                  - ./data.csv:/docker-entrypoint-initdb.d/data.csv
+
+              backend:
+                image: $IMAGE_URI
+                container_name: deepflow-backend
+                restart: unless-stopped
+                depends_on:
+                  - mysql
+                env_file:
+                  - .env
+                ports:
+                  - "8080:8080"
+
+            volumes:
+              mysql-data:
+            EOF
+
+            docker load -i deepflow-backend.tar
+            docker compose -f docker-compose.dev.yml up -d
