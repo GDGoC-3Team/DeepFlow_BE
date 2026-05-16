@@ -213,6 +213,7 @@ jobs:
             cat docker-compose.dev.yml
 
             echo "[INFO] Starting containers"
+            sudo docker rm -f deepflow-backend deepflow-mysql || true
             sudo docker compose -f docker-compose.dev.yml up -d --remove-orphans
 
             echo "[INFO] Container status after deploy"
