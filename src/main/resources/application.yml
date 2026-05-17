@@ -4,8 +4,8 @@ server:
 spring:
   datasource:
     url: jdbc:mysql://localhost:3306/deepflowdb
-    username: root
-    password: root
+    username: deepflowdb
+    password: deepflow123
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
@@ -18,16 +18,6 @@ spring:
     scheduling:
       pool:
         size: 5
-
-cloud:
-  aws:
-    s3:
-      bucket: ${S3_BUCKET}
-    region:
-      static: ${AWS_REGION:ap-northeast-2}
-    credentials:
-      access-key: ${AWS_ACCESS_KEY}
-      secret-key: ${AWS_SECRET_KEY}
 
 gcp:
   storage:

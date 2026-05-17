@@ -27,9 +27,7 @@ public class BookPage {
     @JoinColumn(name = "book_id")
     private Book book;
 
-    private int pageNumber;
-
-    @Column(columnDefinition = "TEXT")
+    @Column(columnDefinition = "LONGTEXT")
     private String content;
 
     private int characterCount;
