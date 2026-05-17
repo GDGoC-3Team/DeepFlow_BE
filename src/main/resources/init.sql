@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS book_imports (
     PRIMARY KEY (id)
 );
 
-LOAD DATA INFILE '/docker-entrypoint-initdb.d/data.csv'
+LOAD DATA INFILE '/var/lib/mysql-files/data.csv'
 INTO TABLE book_imports
 CHARACTER SET utf8mb4
 FIELDS TERMINATED BY ','

@@ -4,7 +4,7 @@ import com.google.auth.oauth2.GoogleCredentials;
 import com.google.cloud.storage.Storage;
 import com.google.cloud.storage.StorageOptions;
 import java.io.ByteArrayInputStream;
-import java.util.Base64;
+import java.nio.charset.StandardCharsets;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -17,10 +17,11 @@ public class GcsConfig {
     @Bean
     public Storage gcsStorage(
             @Value("${gcp.storage.project-id}") String projectId,
-            @Value("${gcp.storage.credentials}") String encodedCredentials
+            @Value("${gcp.storage.credentials}") String credentialsJson
     ) throws Exception {
-        byte[] decoded = Base64.getDecoder().decode(encodedCredentials);
-        GoogleCredentials credentials = GoogleCredentials.fromStream(new ByteArrayInputStream(decoded));
+        GoogleCredentials credentials = GoogleCredentials.fromStream(
+                new ByteArrayInputStream(credentialsJson.getBytes(StandardCharsets.UTF_8))
+        );
         return StorageOptions.newBuilder()
                 .setProjectId(projectId)
                 .setCredentials(credentials)

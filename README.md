@@ -85,4 +85,22 @@ Error responses include a stable `code` field for client branching:
   "code": "AUTH_TOKEN_INVALID",
   "message": "Invalid Firebase ID token"
 }
+
+## GCS Profile
+
+Enable Google Cloud Storage with:
+
+```powershell
+$env:SPRING_PROFILES_ACTIVE='gcp'
+```
+
+Required environment variables:
+
+```powershell
+$env:GCP_PROJECT_ID='your-gcp-project-id'
+$env:GCS_BUCKET='your-gcs-bucket'
+$env:GCP_SERVICE_ACCOUNT_KEY='service-account-json'
+```
+
+`GCP_SERVICE_ACCOUNT_KEY` must contain the raw service account JSON used by the backend.
 ```
