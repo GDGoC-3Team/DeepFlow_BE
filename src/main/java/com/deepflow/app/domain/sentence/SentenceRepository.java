@@ -10,4 +10,7 @@ public interface SentenceRepository extends JpaRepository<Sentence, Long> {
 
     @Query("select s from Sentence s order by function('RAND')")
     List<Sentence> findRandom(Pageable pageable);
+
+    @Query("select s.id from Sentence s")
+    List<Long> findAllIds();
 }

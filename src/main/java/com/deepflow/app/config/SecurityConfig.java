@@ -4,6 +4,7 @@ import com.deepflow.app.auth.FirebaseTokenFilter;
 import com.deepflow.app.common.ApiResponse;
 import com.deepflow.app.common.ErrorCode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import lombok.RequiredArgsConstructor;
@@ -33,7 +34,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint((request, response, authException) ->
-                                writeError(response, HttpStatus.UNAUTHORIZED, ErrorCode.AUTH_REQUIRED, "Authentication is required"))
+                                handleAuthenticationEntryPoint(request, response))
                         .accessDeniedHandler((request, response, accessDeniedException) ->
                                 writeError(response, HttpStatus.FORBIDDEN, ErrorCode.ACCESS_DENIED, "Access is denied"))
                 )
@@ -45,6 +46,14 @@ public class SecurityConfig {
                 )
                 .addFilterBefore(firebaseTokenFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
+    }
+
+    private void handleAuthenticationEntryPoint(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        if (HttpMethod.GET.matches(request.getMethod()) && "/".equals(request.getRequestURI())) {
+            response.sendRedirect("/auth/login");
+            return;
+        }
+        writeError(response, HttpStatus.UNAUTHORIZED, ErrorCode.AUTH_REQUIRED, "Authentication is required");
     }
 
     private void writeError(HttpServletResponse response, HttpStatus status, ErrorCode code, String message) throws IOException {

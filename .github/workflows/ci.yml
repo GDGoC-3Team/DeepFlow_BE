@@ -1,19 +1,91 @@
-name: CI
+name: CI/CD
+
 on:
   push:
     branches: [main, develop]
   pull_request:
     branches: [main, develop]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
-  build:
+  build-test:
     runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8
+        env:
+          MYSQL_DATABASE: deepflowdb
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    env:
+      SPRING_DATASOURCE_URL: jdbc:mysql://127.0.0.1:3306/deepflowdb
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root
     steps:
       - uses: actions/checkout@v4
+
+      - name: Write Firebase credentials file
+        if: ${{ secrets.FIREBASE_CREDENTIALS_JSON != '' }}
+        run: |
+          cat <<'EOF' > "$GITHUB_WORKSPACE/firebase-credentials.json"
+          ${{ secrets.FIREBASE_CREDENTIALS_JSON }}
+          EOF
+          echo "FIREBASE_CREDENTIALS_PATH=$GITHUB_WORKSPACE/firebase-credentials.json" >> "$GITHUB_ENV"
+
       - uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
+
       - uses: gradle/actions/setup-gradle@v3
-      - run: sh ./gradlew build --no-daemon
-      - run: sh ./gradlew test --no-daemon
+
+      - name: Run tests
+        run: sh ./gradlew clean test --no-daemon
+
+      - name: Build bootJar
+        run: sh ./gradlew bootJar --no-daemon
+
+  docker-image:
+    runs-on: ubuntu-latest
+    needs: build-test
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract image metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=sha
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+
+      - name: Log in to GHCR
+        if: ${{ github.event_name != 'pull_request' }}
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and optionally push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}

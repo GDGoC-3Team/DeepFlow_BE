@@ -5,30 +5,40 @@ services:
     restart: unless-stopped
     environment:
       MYSQL_DATABASE: deepflowdb
-      MYSQL_ROOT_PASSWORD: deepflowdb123
+      MYSQL_ROOT_PASSWORD: root
     ports:
       - "3306:3306"
     volumes:
       - mysql-data:/var/lib/mysql
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
-      - ./data.csv:/docker-entrypoint-initdb.d/data.csv
+      - ./src/main/resources/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./src/main/resources/data.csv:/var/lib/mysql-files/data.csv
     healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -pdeepflowdb123 || exit 1"]
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -proot || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 30s
 
   backend:
-    image: jjy12163/deepflow-backend:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: deepflow-backend:local
     container_name: backend
     restart: unless-stopped
     ports:
       - "8080:8080"
     environment:
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/deepflowdb
-      SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: deepflowdb123
+      SPRING_DATASOURCE_USERNAME: ${MYSQL_USERNAME:-root}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD:-root}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-}
+      FIREBASE_CREDENTIALS_PATH: /run/secrets/firebase-credentials.json
+      GCP_PROJECT_ID: ${GCP_PROJECT_ID:-}
+      GCS_BUCKET: ${GCS_BUCKET:-}
+      GCP_SERVICE_ACCOUNT_KEY: ${GCP_SERVICE_ACCOUNT_KEY:-}
+    volumes:
+      - ./src/main/resources/firebase-credentials.json:/run/secrets/firebase-credentials.json:ro
     depends_on:
       mysql:
         condition: service_healthy

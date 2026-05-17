@@ -2,7 +2,7 @@ name: Dev Deploy
 
 on:
   push:
-    branches: [develop]
+    branches: [develop, feat/#2-deployment]
   workflow_dispatch:
 
 concurrency:
@@ -39,6 +39,7 @@ jobs:
           VM_HOST: ${{ vars.GCE_VM_HOST }}
           VM_USER: ${{ vars.GCE_VM_USER }}
           GCP_SERVICE_ACCOUNT_KEY: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
+          FIREBASE_CREDENTIALS: ${{ secrets.FIREBASE_CREDENTIALS }}
           GCE_SSH_PRIVATE_KEY: ${{ secrets.GCE_SSH_PRIVATE_KEY }}
           DEV_MYSQL_ROOT_PASSWORD: ${{ secrets.DEV_MYSQL_ROOT_PASSWORD }}
         run: |
@@ -49,6 +50,7 @@ jobs:
           [ -n "$VM_HOST" ] || { echo "Missing variable: GCE_VM_HOST"; exit 1; }
           [ -n "$VM_USER" ] || { echo "Missing variable: GCE_VM_USER"; exit 1; }
           [ -n "$GCP_SERVICE_ACCOUNT_KEY" ] || { echo "Missing secret: GCP_SERVICE_ACCOUNT_KEY"; exit 1; }
+          [ -n "$FIREBASE_CREDENTIALS" ] || { echo "Missing secret: FIREBASE_CREDENTIALS"; exit 1; }
           [ -n "$GCE_SSH_PRIVATE_KEY" ] || { echo "Missing secret: GCE_SSH_PRIVATE_KEY"; exit 1; }
           [ -n "$DEV_MYSQL_ROOT_PASSWORD" ] || { echo "Missing secret: DEV_MYSQL_ROOT_PASSWORD"; exit 1; }
 
@@ -119,12 +121,14 @@ jobs:
           SPRING_PROFILE: gcp
           MYSQL_DATABASE: deepflowdb
           MYSQL_ROOT_PASSWORD: ${{ secrets.DEV_MYSQL_ROOT_PASSWORD }}
+          GCP_SERVICE_ACCOUNT_KEY: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
+          FIREBASE_CREDENTIALS: ${{ secrets.FIREBASE_CREDENTIALS }}
         with:
           host: ${{ env.VM_HOST }}
           username: ${{ env.VM_USER }}
           port: ${{ env.VM_PORT }}
           key: ${{ secrets.GCE_SSH_PRIVATE_KEY }}
-          envs: IMAGE_URI,DEPLOY_PATH,SPRING_PROFILE,MYSQL_DATABASE,MYSQL_ROOT_PASSWORD
+          envs: IMAGE_URI,DEPLOY_PATH,SPRING_PROFILE,MYSQL_DATABASE,MYSQL_ROOT_PASSWORD,GCP_SERVICE_ACCOUNT_KEY,FIREBASE_CREDENTIALS
           script: |
             set -euxo pipefail
             trap 'echo "[ERROR] Command failed at line $LINENO"' ERR
@@ -158,6 +162,9 @@ jobs:
 
             cp src/main/resources/init.sql ./init.sql
             cp src/main/resources/data.csv ./data.csv
+            mkdir -p secrets
+            printf '%s' "$FIREBASE_CREDENTIALS" > ./secrets/firebase-credentials.json
+            chmod 600 ./secrets/firebase-credentials.json
 
             echo "[INFO] Deployment directory contents"
             ls -la
@@ -170,6 +177,7 @@ jobs:
 
             cat > .env <<EOF
             SPRING_PROFILES_ACTIVE=$SPRING_PROFILE
+            FIREBASE_CREDENTIALS_PATH=/run/secrets/firebase-credentials.json
             SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/$MYSQL_DATABASE
             SPRING_DATASOURCE_USERNAME=root
             SPRING_DATASOURCE_PASSWORD=$MYSQL_ROOT_PASSWORD
@@ -189,18 +197,27 @@ jobs:
                 volumes:
                   - mysql-data:/var/lib/mysql
                   - ./init.sql:/docker-entrypoint-initdb.d/init.sql
-                  - ./data.csv:/docker-entrypoint-initdb.d/data.csv
+                  - ./data.csv:/var/lib/mysql-files/data.csv
+                healthcheck:
+                  test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$MYSQL_ROOT_PASSWORD || exit 1"]
+                  interval: 10s
+                  timeout: 5s
+                  retries: 5
+                  start_period: 30s
 
               backend:
                 image: $IMAGE_URI
                 container_name: deepflow-backend
                 restart: unless-stopped
                 depends_on:
-                  - mysql
+                  mysql:
+                    condition: service_healthy
                 env_file:
                   - .env
                 ports:
                   - "8080:8080"
+                volumes:
+                  - ./secrets/firebase-credentials.json:/run/secrets/firebase-credentials.json:ro
 
             volumes:
               mysql-data:
