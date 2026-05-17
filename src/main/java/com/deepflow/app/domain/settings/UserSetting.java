@@ -55,7 +55,7 @@ public class UserSetting {
             this.notificationEnabled = request.notificationEnabled();
         }
         if (request.notificationTime() != null) {
-            this.notificationTime = request.notificationTime();
+            this.notificationTime = request.notificationTime().withSecond(0).withNano(0);
         }
         if (request.fontFamily() != null) {
             this.fontFamily = request.fontFamily();

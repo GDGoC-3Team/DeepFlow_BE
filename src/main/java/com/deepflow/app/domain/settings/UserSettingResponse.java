@@ -1,10 +1,12 @@
 package com.deepflow.app.domain.settings;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import java.time.LocalTime;
 
 public record UserSettingResponse(
         Long id,
         boolean notificationEnabled,
+        @JsonFormat(pattern = "HH:mm")
         LocalTime notificationTime,
         FontFamily fontFamily,
         String fontFamilyDisplayName,
