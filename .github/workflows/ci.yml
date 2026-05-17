@@ -35,12 +35,13 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Write Firebase credentials file
-        if: ${{ secrets.FIREBASE_CREDENTIALS_JSON != '' }}
+        env:
+          FIREBASE_CREDENTIALS_JSON: ${{ secrets.FIREBASE_CREDENTIALS_JSON }}
         run: |
-          cat <<'EOF' > "$GITHUB_WORKSPACE/firebase-credentials.json"
-          ${{ secrets.FIREBASE_CREDENTIALS_JSON }}
-          EOF
-          echo "FIREBASE_CREDENTIALS_PATH=$GITHUB_WORKSPACE/firebase-credentials.json" >> "$GITHUB_ENV"
+          if [ -n "$FIREBASE_CREDENTIALS_JSON" ]; then
+            printf '%s' "$FIREBASE_CREDENTIALS_JSON" > "$GITHUB_WORKSPACE/firebase-credentials.json"
+            echo "FIREBASE_CREDENTIALS_PATH=$GITHUB_WORKSPACE/firebase-credentials.json" >> "$GITHUB_ENV"
+          fi
 
       - uses: actions/setup-java@v4
         with:
@@ -54,6 +55,38 @@ jobs:
 
       - name: Build bootJar
         run: sh ./gradlew bootJar --no-daemon
+
+      - name: Smoke test application startup
+        shell: bash
+        run: |
+          set -euo pipefail
+          java -jar build/libs/*.jar --server.port=0 > app-start.log 2>&1 &
+          APP_PID=$!
+
+          cleanup() {
+            if kill -0 "$APP_PID" 2>/dev/null; then
+              kill "$APP_PID" 2>/dev/null || true
+              wait "$APP_PID" 2>/dev/null || true
+            fi
+          }
+
+          trap cleanup EXIT
+
+          for _ in $(seq 1 60); do
+            if grep -q "Started AppApplication" app-start.log; then
+              exit 0
+            fi
+
+            if ! kill -0 "$APP_PID" 2>/dev/null; then
+              cat app-start.log
+              exit 1
+            fi
+
+            sleep 2
+          done
+
+          cat app-start.log
+          exit 1
 
   docker-image:
     runs-on: ubuntu-latest
