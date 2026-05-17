@@ -94,14 +94,6 @@ jobs:
           docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.ARTIFACT_REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
           docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.ARTIFACT_REPOSITORY }}/${{ env.IMAGE_NAME }}:develop
 
-      - name: Export Docker image
-        run: docker save ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.ARTIFACT_REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} -o deepflow-backend.tar
-
-      - name: Fix tar permission
-        run: |
-          sudo chown runner:docker deepflow-backend.tar || true
-          chmod 644 deepflow-backend.tar
-
       - name: Copy deployment files to VM
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -109,7 +101,7 @@ jobs:
           username: ${{ env.VM_USER }}
           port: ${{ env.VM_PORT }}
           key: ${{ secrets.GCE_SSH_PRIVATE_KEY }}
-          source: "src/main/resources/init.sql,src/main/resources/data.csv,deepflow-backend.tar"
+          source: "src/main/resources/init.sql,src/main/resources/data.csv"
           target: ${{ env.DEPLOY_PATH }}
           overwrite: true
 
@@ -128,7 +120,7 @@ jobs:
           username: ${{ env.VM_USER }}
           port: ${{ env.VM_PORT }}
           key: ${{ secrets.GCE_SSH_PRIVATE_KEY }}
-          envs: IMAGE_URI,DEPLOY_PATH,SPRING_PROFILE,MYSQL_DATABASE,MYSQL_ROOT_PASSWORD,GCP_SERVICE_ACCOUNT_KEY,FIREBASE_CREDENTIALS
+          envs: IMAGE_URI,DEPLOY_PATH,SPRING_PROFILE,MYSQL_DATABASE,MYSQL_ROOT_PASSWORD,GCP_SERVICE_ACCOUNT_KEY,FIREBASE_CREDENTIALS,REGION
           script: |
             set -euxo pipefail
             trap 'echo "[ERROR] Command failed at line $LINENO"' ERR
@@ -156,7 +148,6 @@ jobs:
               sudo apt-get install -y docker-compose-plugin
             fi
 
-            [ -f deepflow-backend.tar ] || { echo "Missing deepflow-backend.tar in deploy path"; exit 1; }
             [ -f src/main/resources/init.sql ] || { echo "Missing src/main/resources/init.sql in deploy path"; exit 1; }
             [ -f src/main/resources/data.csv ] || { echo "Missing src/main/resources/data.csv in deploy path"; exit 1; }
 
@@ -174,6 +165,12 @@ jobs:
 
             echo "[INFO] Docker Compose version"
             sudo docker compose version
+
+            echo "[INFO] Logging into Artifact Registry"
+            printf '%s' "$GCP_SERVICE_ACCOUNT_KEY" | sudo docker login -u _json_key --password-stdin "https://$REGION-docker.pkg.dev"
+
+            echo "[INFO] Pulling backend image"
+            sudo docker pull "$IMAGE_URI"
 
             cat > .env <<EOF
             SPRING_PROFILES_ACTIVE=$SPRING_PROFILE
@@ -222,9 +219,6 @@ jobs:
             volumes:
               mysql-data:
             EOF
-
-            echo "[INFO] Loading Docker image tar"
-            sudo docker load -i deepflow-backend.tar
 
             echo "[INFO] Rendered compose file"
             cat docker-compose.dev.yml
