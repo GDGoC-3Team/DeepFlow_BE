@@ -89,7 +89,7 @@ public class ReadingService {
         ReadingSession session = getOwnedSession(user, sessionId);
 
         // 2. 페이지별 읽기 시간 조회
-        List<PageTime> pageTimes = pageTimeRepository.findBySessionOrderByPageNumberAsc(session);
+        List<PageTime> pageTimes = pageTimeRepository.findBySessionOrderByStartOffsetAsc(session);
 
         // 3. 전체 평균 문자당 읽기 시간 계산
         double average = pageTimes.stream()
@@ -98,7 +98,7 @@ public class ReadingService {
                 .orElse(0.0);
 
         // 4. 페이지별 독서 결과 생성
-        List<ReadingResultResponse.PageBreakdown> pages = pageTimes.stream()
+        List<ReadingResultResponse.SegmentBreakdown> segments = pageTimes.stream()
                 .map(pageTime -> {
                     int characterCount = pageTime.getCharacterCount();
                     double segmentSecondsPerCharacter = characterCount == 0
@@ -117,7 +117,7 @@ public class ReadingService {
                 })
                 .toList();
 
-        int totalCharacterCount = totalCharacterCount(session.getBook());
+        int totalCharacterCount = bookPageRepository.sumCharacterCountByBook(session.getBook());
         double progressPercent = totalCharacterCount == 0
                 ? 0.0
                 : Math.min(100.0, ((double) session.getMaxOffset() / totalCharacterCount) * 100.0);
@@ -243,20 +243,12 @@ public class ReadingService {
     //// ==========================
     //// 페이지 체류시간 계산
     //// ==========================
-    private double secondsPerCharacter(Book book, PageTime pageTime) {
-        int characterCount = characterCount(book, pageTime.getPageNumber());
+    private double secondsPerCharacter(PageTime pageTime) {
+        int characterCount = pageTime.getCharacterCount();
         if (characterCount == 0) {
             return 0.0;
         }
         return (double) pageTime.getElapsedSeconds() / characterCount;
     }
 
-    //// ==========================
-    //// 페이지 글자 수 조회
-    //// ==========================
-    private int characterCount(Book book, int pageNumber) {
-        return bookPageRepository.findByBookAndPageNumber(book, pageNumber)
-                .map(BookPage::getCharacterCount)
-                .orElse(0);
-    }
 }
