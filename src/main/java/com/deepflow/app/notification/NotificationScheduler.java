@@ -9,6 +9,8 @@ import com.deepflow.app.domain.settings.UserSettingRepository;
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.messaging.Message;
 import com.google.firebase.messaging.Notification;
+import java.time.LocalTime;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;
@@ -22,14 +24,17 @@ import org.springframework.util.StringUtils;
 @RequiredArgsConstructor
 public class NotificationScheduler {
 
+    private static final ZoneId KST = ZoneId.of("Asia/Seoul");
+
     private final UserSettingRepository userSettingRepository;
     private final SavedSentenceRepository savedSentenceRepository;
     private final SentenceRepository sentenceRepository;
 
-    @Scheduled(cron = "0 0 8 * * *", zone = "Asia/Seoul")
+    @Scheduled(cron = "0 * * * * *", zone = "Asia/Seoul")
     @Transactional(readOnly = true)
     public void sendDailySentencePush() {
-        userSettingRepository.findByNotificationEnabledTrue().forEach(this::sendToUser);
+        LocalTime now = LocalTime.now(KST).withSecond(0).withNano(0);
+        userSettingRepository.findByNotificationEnabledTrueAndNotificationTime(now).forEach(this::sendToUser);
     }
 
     private void sendToUser(UserSetting setting) {

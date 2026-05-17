@@ -1,6 +1,7 @@
 package com.deepflow.app.domain.settings;
 
 import com.deepflow.app.common.ApiResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -22,7 +23,7 @@ public class UserSettingController {
     }
 
     @PatchMapping
-    public ApiResponse<UserSettingResponse> update(Authentication authentication, @RequestBody UpdateUserSettingRequest request) {
+    public ApiResponse<UserSettingResponse> update(Authentication authentication, @Valid @RequestBody UpdateUserSettingRequest request) {
         return ApiResponse.ok(userSettingService.update(authentication.getName(), request));
     }
 }
