@@ -5,7 +5,14 @@ import com.deepflow.app.domain.saved.SavedSentenceRepository;
 import com.deepflow.app.domain.user.User;
 import com.deepflow.app.domain.user.UserService;
 import jakarta.persistence.EntityNotFoundException;
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Random;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -24,6 +31,37 @@ public class SentenceService {
         return sentenceRepository.findRandom(PageRequest.of(0, Math.max(1, size)));
     }
 
+    @Transactional(readOnly = true)
+    public HomeFeedResponse getHomeFeed(LocalDate date, int size) {
+        int feedSize = Math.max(1, size);
+        List<Long> sentenceIds = new ArrayList<>(sentenceRepository.findAllIds());
+        if (sentenceIds.isEmpty()) {
+            return new HomeFeedResponse(date, List.of());
+        }
+
+        sentenceIds.sort(Comparator.comparingLong(id -> dailyOrderValueFor(date, id)));
+        List<Long> selectedIds = sentenceIds.stream()
+                .limit(feedSize)
+                .toList();
+
+        Map<Long, Sentence> sentenceById = new HashMap<>();
+        sentenceRepository.findAllById(selectedIds)
+                .forEach(sentence -> sentenceById.put(sentence.getId(), sentence));
+
+        List<HomeSentenceResponse> items = selectedIds.stream()
+                .map(sentenceById::get)
+                .filter(sentence -> sentence != null)
+                .map(HomeSentenceResponse::from)
+                .toList();
+
+        return new HomeFeedResponse(date, items);
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<HomeSentenceResponse> getPrimaryHomeFeedSentence(LocalDate date) {
+        return getHomeFeed(date, 10).items().stream().findFirst();
+    }
+
     @Transactional
     public boolean toggleSave(String firebaseUid, Long sentenceId) {
         User user = userService.getByFirebaseUid(firebaseUid);
@@ -39,5 +77,11 @@ public class SentenceService {
                     savedSentenceRepository.save(SavedSentence.of(user, sentence));
                     return true;
                 });
+    }
+
+    private long dailyOrderValueFor(LocalDate date, Long id) {
+        long seed = date.toEpochDay();
+        Random random = new Random(seed ^ id);
+        return random.nextLong();
     }
 }

@@ -50,6 +50,14 @@ public class User extends BaseEntity {
         }
     }
 
+    public void updateFcmToken(String fcmToken) {
+        this.fcmToken = fcmToken;
+    }
+
+    public void clearFcmToken() {
+        this.fcmToken = null;
+    }
+
     public void updateFromFirebase(String email, String nickname, String fcmToken) {
         this.email = email;
         updateProfile(nickname, fcmToken);

@@ -51,6 +51,21 @@ public class UserService {
         return findByFirebaseUid(firebaseUid);
     }
 
+    @Transactional
+    public void updateFcmToken(String firebaseUid, String fcmToken) {
+        findByFirebaseUid(firebaseUid).updateFcmToken(fcmToken);
+    }
+
+    @Transactional
+    public void clearFcmToken(String firebaseUid) {
+        findByFirebaseUid(firebaseUid).clearFcmToken();
+    }
+
+    @Transactional
+    public void clearFcmTokenByUserId(Long userId) {
+        userRepository.findById(userId).ifPresent(User::clearFcmToken);
+    }
+
     // firebaseUid 기반 User 엔티티 조회 **내부 로직**
     private User findByFirebaseUid(String firebaseUid) {
         if (firebaseUid == null) {

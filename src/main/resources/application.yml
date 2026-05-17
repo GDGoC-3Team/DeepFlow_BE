@@ -4,8 +4,8 @@ server:
 spring:
   datasource:
     url: jdbc:mysql://localhost:3306/deepflowdb
-    username: deepflowdb
-    password: deepflow123
+    username: root
+    password: root
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
@@ -18,12 +18,6 @@ spring:
     scheduling:
       pool:
         size: 5
-
-gcp:
-  storage:
-    bucket: ${GCS_BUCKET}
-    credentials: ${GCS_CREDENTIALS_JSON}
-    project-id: ${GCP_PROJECT_ID}
 
 springdoc:
   swagger-ui:
