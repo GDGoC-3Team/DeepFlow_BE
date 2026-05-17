@@ -11,6 +11,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Random;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -54,6 +55,11 @@ public class SentenceService {
                 .toList();
 
         return new HomeFeedResponse(date, items);
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<HomeSentenceResponse> getPrimaryHomeFeedSentence(LocalDate date) {
+        return getHomeFeed(date, 10).items().stream().findFirst();
     }
 
     @Transactional

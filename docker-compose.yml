@@ -20,10 +20,7 @@ services:
       start_period: 30s
 
   backend:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    image: deepflow-backend:local
+    image: jjy12163/deepflow-backend:latest
     container_name: backend
     restart: unless-stopped
     ports:
