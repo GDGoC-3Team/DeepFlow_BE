@@ -47,6 +47,9 @@ public class ReadingSession {
     }
 
     public void complete() {
+        if (this.completedAt != null) {
+            return;
+        }
         this.completedAt = LocalDateTime.now();
     }
 }
