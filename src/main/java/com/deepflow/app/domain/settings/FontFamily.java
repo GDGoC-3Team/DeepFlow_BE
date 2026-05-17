@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum FontFamily {
     NANUM_MYEONGJO("나눔 명조"),
-    KOPUB_BATANG("Kopub"),
+    KOPUB_BATANG("KoPub 바탕체"),
     NOTO_SANS("본고딕");
 
     private final String displayName;
