@@ -208,14 +208,23 @@ public class ReadingService {
     //// ==========================
     @Transactional(readOnly = true)
     public HabbitResponse getReadingHabbit(String firebaseUid) {
+
+        // 1. 유저 조회
         User user = userService.getByFirebaseUid(firebaseUid);
+
+        // 2. 독서 완료 날짜 목록 조회
         List<LocalDate> completedDates = readingRepository.findCompletedDates(user);
+
+        // 3. 완료 기록이 없으면 streak = 0 반환
         if (completedDates.isEmpty()) {
             return new HabbitResponse(0, 0);
         }
 
+        // 4. 스트릭 계산 기준 날짜 설정 (가장 최근 독서 완료 날짜)
         int streakDays = 0;
         LocalDate streakBaseDate = completedDates.get(completedDates.size() - 1);
+
+        // 5. 역순으로 탐색하면서 연속 날짜인지 확인
         for (int i = completedDates.size() - 1; i >= 0; i--) {
             if (completedDates.get(i).equals(streakBaseDate)) {
                 streakDays++;
@@ -225,6 +234,7 @@ public class ReadingService {
             }
         }
 
+        // 6. 결과 반환
         return new HabbitResponse(streakDays, Math.min(streakDays, 7));
     }
 
