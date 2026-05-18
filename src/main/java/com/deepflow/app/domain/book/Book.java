@@ -24,4 +24,12 @@ public class Book {
     private String author;
 
     private String coverImageUrl;
+
+    public static Book of(String title, String author, String coverImageUrl) {
+        Book book = new Book();
+        book.title = title;
+        book.author = author;
+        book.coverImageUrl = coverImageUrl;
+        return book;
+    }
 }

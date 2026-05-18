@@ -1,6 +1,9 @@
 services:
   mysql:
-    image: mysql:8
+    build:
+      context: .
+      dockerfile: Dockerfile.mysql
+    image: deepflow-mysql:local
     container_name: mysql
     restart: unless-stopped
     environment:
@@ -10,8 +13,6 @@ services:
       - "3306:3306"
     volumes:
       - mysql-data:/var/lib/mysql
-      - ./src/main/resources/init.sql:/docker-entrypoint-initdb.d/init.sql
-      - ./src/main/resources/data.csv:/var/lib/mysql-files/data.csv
     healthcheck:
       test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -proot || exit 1"]
       interval: 10s

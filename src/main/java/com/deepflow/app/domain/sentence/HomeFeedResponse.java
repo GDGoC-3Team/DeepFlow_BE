@@ -5,9 +5,9 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDate;
 import java.util.List;
 
-@Schema(description = "Daily home feed response")
+@Schema(description = "홈 문장 피드 응답입니다.")
 public record HomeFeedResponse(
-        @Schema(description = "Feed generation date", example = "2026-05-18")
+        @Schema(description = "피드 기준 날짜입니다.", example = "2026-05-18")
         LocalDate date,
         @ArraySchema(schema = @Schema(implementation = HomeSentenceResponse.class))
         List<HomeSentenceResponse> items
