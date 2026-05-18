@@ -1,4 +1,4 @@
 FROM mysql:8
 
-COPY src/main/resources/init.sql /docker-entrypoint-initdb.d/init.sql
-COPY src/main/resources/data.csv /var/lib/mysql-files/data.csv
+COPY src/main/resources/init.sql /docker-entrypoint-initdb.d/01-init.sql
+COPY src/main/resources/data-seed.sql /docker-entrypoint-initdb.d/02-data-seed.sql

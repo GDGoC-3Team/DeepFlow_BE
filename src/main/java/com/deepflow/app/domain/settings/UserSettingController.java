@@ -19,19 +19,19 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/settings")
 @RequiredArgsConstructor
-@Tag(name = "User Settings", description = "APIs for managing user notification and typography preferences")
+@Tag(name = "사용자 설정", description = "사용자 알림, 글꼴, 읽기 환경 설정을 관리하는 API입니다.")
 public class UserSettingController {
 
     private final UserSettingService userSettingService;
 
     @Operation(
-            summary = "Get user settings",
-            description = "Returns the current user's notification, typography, and reading preference settings."
+            summary = "사용자 설정 조회",
+            description = "현재 사용자의 알림, 글꼴, 읽기 관련 설정을 한 번에 조회합니다."
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
-                    description = "User settings fetched successfully",
+                    description = "사용자 설정을 성공적으로 조회했습니다.",
                     content = @Content(schema = @Schema(implementation = UserSettingResponse.class))
             )
     })
@@ -41,13 +41,13 @@ public class UserSettingController {
     }
 
     @Operation(
-            summary = "Get home notification toggle",
-            description = "Returns whether the current user wants to receive push notifications from the home screen toggle."
+            summary = "알림 수신 여부 조회",
+            description = "현재 사용자의 홈 화면 알림 수신 여부를 조회합니다."
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
-                    description = "Notification preference fetched successfully",
+                    description = "알림 수신 여부를 성공적으로 조회했습니다.",
                     content = @Content(schema = @Schema(implementation = NotificationPreferenceResponse.class))
             )
     })
@@ -57,13 +57,13 @@ public class UserSettingController {
     }
 
     @Operation(
-            summary = "Update home notification toggle",
-            description = "Turns push notifications on or off for the current user from the home screen."
+            summary = "알림 수신 여부 변경",
+            description = "현재 사용자의 홈 화면 알림 수신 여부를 변경합니다."
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
-                    description = "Notification preference updated successfully",
+                    description = "알림 수신 여부를 성공적으로 변경했습니다.",
                     content = @Content(schema = @Schema(implementation = NotificationPreferenceResponse.class))
             )
     })
@@ -76,13 +76,13 @@ public class UserSettingController {
     }
 
     @Operation(
-            summary = "Get font family setting",
-            description = "Returns the current user's selected font family."
+            summary = "글꼴 종류 조회",
+            description = "현재 사용자가 선택한 글꼴 종류를 조회합니다."
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
-                    description = "Font family fetched successfully",
+                    description = "글꼴 종류를 성공적으로 조회했습니다.",
                     content = @Content(schema = @Schema(implementation = FontFamilySettingResponse.class))
             )
     })
@@ -92,13 +92,13 @@ public class UserSettingController {
     }
 
     @Operation(
-            summary = "Update font family setting",
-            description = "Updates the current user's selected font family."
+            summary = "글꼴 종류 변경",
+            description = "현재 사용자가 사용할 글꼴 종류를 변경합니다."
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
-                    description = "Font family updated successfully",
+                    description = "글꼴 종류를 성공적으로 변경했습니다.",
                     content = @Content(schema = @Schema(implementation = FontFamilySettingResponse.class))
             )
     })
@@ -111,13 +111,13 @@ public class UserSettingController {
     }
 
     @Operation(
-            summary = "Get font size setting",
-            description = "Returns the current user's preferred font size."
+            summary = "글꼴 크기 조회",
+            description = "현재 사용자가 설정한 글꼴 크기를 조회합니다."
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
-                    description = "Font size fetched successfully",
+                    description = "글꼴 크기를 성공적으로 조회했습니다.",
                     content = @Content(schema = @Schema(implementation = FontSizeSettingResponse.class))
             )
     })
@@ -127,13 +127,13 @@ public class UserSettingController {
     }
 
     @Operation(
-            summary = "Update font size setting",
-            description = "Updates the current user's preferred font size."
+            summary = "글꼴 크기 변경",
+            description = "현재 사용자가 사용할 글꼴 크기를 변경합니다."
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
-                    description = "Font size updated successfully",
+                    description = "글꼴 크기를 성공적으로 변경했습니다.",
                     content = @Content(schema = @Schema(implementation = FontSizeSettingResponse.class))
             )
     })
@@ -146,13 +146,13 @@ public class UserSettingController {
     }
 
     @Operation(
-            summary = "Get notification time setting",
-            description = "Returns the current user's preferred notification time."
+            summary = "알림 시간 조회",
+            description = "현재 사용자가 설정한 알림 시간을 조회합니다."
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
-                    description = "Notification time fetched successfully",
+                    description = "알림 시간을 성공적으로 조회했습니다.",
                     content = @Content(schema = @Schema(implementation = NotificationTimeSettingResponse.class))
             )
     })
@@ -162,13 +162,13 @@ public class UserSettingController {
     }
 
     @Operation(
-            summary = "Update notification time setting",
-            description = "Updates the current user's preferred notification delivery time."
+            summary = "알림 시간 변경",
+            description = "현재 사용자가 알림을 받을 시간을 변경합니다."
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
-                    description = "Notification time updated successfully",
+                    description = "알림 시간을 성공적으로 변경했습니다.",
                     content = @Content(schema = @Schema(implementation = NotificationTimeSettingResponse.class))
             )
     })
@@ -181,13 +181,13 @@ public class UserSettingController {
     }
 
     @Operation(
-            summary = "Get Firebase notification token status",
-            description = "Returns whether the current user has a registered Firebase Cloud Messaging token for push notifications."
+            summary = "알림 토큰 등록 여부 조회",
+            description = "현재 사용자의 푸시 알림 토큰 등록 여부를 조회합니다."
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
-                    description = "Firebase notification token status fetched successfully",
+                    description = "알림 토큰 등록 여부를 성공적으로 조회했습니다.",
                     content = @Content(schema = @Schema(implementation = NotificationTokenSettingResponse.class))
             )
     })
@@ -197,13 +197,13 @@ public class UserSettingController {
     }
 
     @Operation(
-            summary = "Register Firebase notification token",
-            description = "Registers or replaces the current user's Firebase Cloud Messaging token for push notifications."
+            summary = "알림 토큰 등록 또는 변경",
+            description = "현재 사용자의 푸시 알림 토큰을 등록하거나 새 값으로 변경합니다."
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
-                    description = "Firebase notification token updated successfully",
+                    description = "알림 토큰을 성공적으로 등록하거나 변경했습니다.",
                     content = @Content(schema = @Schema(implementation = NotificationTokenSettingResponse.class))
             )
     })
@@ -216,13 +216,13 @@ public class UserSettingController {
     }
 
     @Operation(
-            summary = "Delete Firebase notification token",
-            description = "Removes the current user's Firebase Cloud Messaging token so this device no longer receives push notifications."
+            summary = "알림 토큰 삭제",
+            description = "현재 사용자의 푸시 알림 토큰을 삭제하여 이 기기에서 더 이상 알림을 받지 않도록 합니다."
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
-                    description = "Firebase notification token deleted successfully",
+                    description = "알림 토큰을 성공적으로 삭제했습니다.",
                     content = @Content(schema = @Schema(implementation = NotificationTokenSettingResponse.class))
             )
     })

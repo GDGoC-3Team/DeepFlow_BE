@@ -31,4 +31,12 @@ public class BookPage {
     private String content;
 
     private int characterCount;
+
+    public static BookPage of(Book book, String content, int characterCount) {
+        BookPage bookPage = new BookPage();
+        bookPage.book = book;
+        bookPage.content = content;
+        bookPage.characterCount = characterCount;
+        return bookPage;
+    }
 }

@@ -12,8 +12,8 @@ public class SwaggerConfig {
     public OpenAPI openAPI() {
         return new OpenAPI()
                 .info(new Info()
-                        .title("Deepflow API")
+                        .title("Deepflow API 문서")
                         .version("v1")
-                        .description("Reading and sentence service API"));
+                        .description("Deepflow 백엔드에서 제공하는 인증, 문장, 독서, 설정 API 문서입니다."));
     }
 }

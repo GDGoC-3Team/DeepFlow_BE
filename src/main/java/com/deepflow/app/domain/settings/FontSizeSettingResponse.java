@@ -2,9 +2,9 @@ package com.deepflow.app.domain.settings;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
-@Schema(description = "Current font size setting")
+@Schema(description = "현재 글꼴 크기 설정입니다.")
 public record FontSizeSettingResponse(
-        @Schema(description = "Preferred font size", example = "18")
+        @Schema(description = "선호하는 글꼴 크기입니다.", example = "18")
         int fontSize
 ) {
 
