@@ -6,5 +6,6 @@ public enum ErrorCode {
     ACCESS_DENIED,
     AUTH_REQUIRED,
     AUTH_TOKEN_INVALID,
-    BAD_REQUEST
+    BAD_REQUEST,
+    LLM_ERROR
 }

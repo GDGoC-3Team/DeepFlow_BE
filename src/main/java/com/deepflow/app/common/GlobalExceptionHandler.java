@@ -2,6 +2,7 @@ package com.deepflow.app.common;
 
 import com.google.firebase.auth.FirebaseAuthException;
 import com.fasterxml.jackson.databind.exc.InvalidFormatException;
+import com.deepflow.app.domain.reading.LlmAnalysisException;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.ConstraintViolationException;
 import java.time.LocalTime;
@@ -70,6 +71,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<Void>> handleFirebaseAuth(FirebaseAuthException exception) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                 .body(ApiResponse.error(ErrorCode.AUTH_TOKEN_INVALID, "Invalid Firebase ID token"));
+    }
+
+    @ExceptionHandler(LlmAnalysisException.class)
+    public ResponseEntity<ApiResponse<Void>> handleLlmAnalysis(LlmAnalysisException exception) {
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                .body(ApiResponse.error(ErrorCode.LLM_ERROR, exception.getMessage()));
     }
 
     @ExceptionHandler(IllegalArgumentException.class)

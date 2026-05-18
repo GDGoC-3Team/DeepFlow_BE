@@ -8,5 +8,7 @@ public interface PageTimeRepository extends JpaRepository<PageTime, Long> {
 
     List<PageTime> findBySessionOrderByStartOffsetAsc(ReadingSession session);
 
+    List<PageTime> findBySessionOrderByIdAsc(ReadingSession session);
+
     Optional<PageTime> findTopBySessionOrderByIdDesc(ReadingSession session);
 }
