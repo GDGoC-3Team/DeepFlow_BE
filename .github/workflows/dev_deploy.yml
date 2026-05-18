@@ -2,7 +2,7 @@ name: Dev Deploy
 
 on:
   push:
-    branches: [develop, feat/#2-deployment]
+    branches: [develop, feat/#4-home]
   workflow_dispatch:
 
 concurrency:
