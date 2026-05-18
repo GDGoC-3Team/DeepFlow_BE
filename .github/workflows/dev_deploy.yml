@@ -24,7 +24,7 @@ env:
   DEPLOY_PATH: ${{ vars.GCE_DEPLOY_PATH || '/home/deploy/deepflow' }}
 
 jobs:
-  deploy:
+  build_and_push:
     runs-on: ubuntu-latest
 
     steps:
@@ -94,6 +94,26 @@ jobs:
           docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.ARTIFACT_REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
           docker push ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.ARTIFACT_REPOSITORY }}/${{ env.IMAGE_NAME }}:develop
 
+      - name: Upload deployment files
+        uses: actions/upload-artifact@v4
+        with:
+          name: dev-deploy-files-${{ github.sha }}
+          path: |
+            src/main/resources/init.sql
+            src/main/resources/data.csv
+          if-no-files-found: error
+
+  deploy_to_vm:
+    runs-on: ubuntu-latest
+    needs: build_and_push
+
+    steps:
+      - name: Download deployment files
+        uses: actions/download-artifact@v4
+        with:
+          name: dev-deploy-files-${{ github.sha }}
+          path: deploy-assets
+
       - name: Copy deployment files to VM
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -101,7 +121,7 @@ jobs:
           username: ${{ env.VM_USER }}
           port: ${{ env.VM_PORT }}
           key: ${{ secrets.GCE_SSH_PRIVATE_KEY }}
-          source: "src/main/resources/init.sql,src/main/resources/data.csv"
+          source: "deploy-assets/init.sql,deploy-assets/data.csv"
           target: ${{ env.DEPLOY_PATH }}
           overwrite: true
 
@@ -148,11 +168,11 @@ jobs:
               sudo apt-get install -y docker-compose-plugin
             fi
 
-            [ -f src/main/resources/init.sql ] || { echo "Missing src/main/resources/init.sql in deploy path"; exit 1; }
-            [ -f src/main/resources/data.csv ] || { echo "Missing src/main/resources/data.csv in deploy path"; exit 1; }
+            [ -f deploy-assets/init.sql ] || { echo "Missing deploy-assets/init.sql in deploy path"; exit 1; }
+            [ -f deploy-assets/data.csv ] || { echo "Missing deploy-assets/data.csv in deploy path"; exit 1; }
 
-            cp src/main/resources/init.sql ./init.sql
-            cp src/main/resources/data.csv ./data.csv
+            cp deploy-assets/init.sql ./init.sql
+            cp deploy-assets/data.csv ./data.csv
             mkdir -p secrets
             printf '%s' "$FIREBASE_CREDENTIALS" > ./secrets/firebase-credentials.json
             chmod 600 ./secrets/firebase-credentials.json
