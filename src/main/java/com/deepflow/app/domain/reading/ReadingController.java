@@ -21,33 +21,40 @@ import org.springframework.web.bind.annotation.RestController;
 public class ReadingController {
 
     private final ReadingService readingService;
+    private final FocusAnalysisService focusAnalysisService;
 
-    // 독서 시작 처리 API
+    // 독서 시작 처리
     @PostMapping("/start")
     public ApiResponse<ReadingSessionResponse> start(Authentication authentication, @Valid @RequestBody StartReadingRequest request) {
         return ApiResponse.ok(ReadingSessionResponse.from(readingService.startSession(authentication.getName(), request.bookId())));
     }
 
-    // 페이지별 읽기 시간 기록 API
+    // 페이지별 읽기 시간 기록
     @PostMapping("/page-time")
     public ApiResponse<Void> pageTime(Authentication authentication, @Valid @RequestBody PageTimeRequest request) {
         readingService.recordPageTime(authentication.getName(), request);
         return ApiResponse.ok(null, "Recorded");
     }
 
-    // 독서 완료 처리 API
+    // 독서 완료 처리
     @PostMapping("/{sessionId}/complete")
     public ApiResponse<ReadingSessionResponse> complete(Authentication authentication, @PathVariable Long sessionId) {
         return ApiResponse.ok(ReadingSessionResponse.from(readingService.completeSession(authentication.getName(), sessionId)));
     }
 
-    // 독서 결과 분석 조회 API
+    // 독서 결과 조회
     @GetMapping("/result/{sessionId}")
     public ApiResponse<ReadingResultResponse> result(Authentication authentication, @PathVariable Long sessionId) {
         return ApiResponse.ok(readingService.result(authentication.getName(), sessionId));
     }
 
-    // 독서 완료 날짜 목록 조회 API
+    // LLM 기반 집중도 분석 결과 조회
+    @GetMapping("/focus-analysis/{sessionId}")
+    public ApiResponse<FocusAnalysisResponse> focusAnalysis(Authentication authentication, @PathVariable Long sessionId) {
+        return ApiResponse.ok(focusAnalysisService.analyze(authentication.getName(), sessionId));
+    }
+
+    // 독서 완료 날짜 목록 조회
     @GetMapping("/history/dates")
     public ApiResponse<List<LocalDate>> completedDates(Authentication authentication) {
         return ApiResponse.ok(readingService.completedDates(authentication.getName()));
