@@ -26,6 +26,7 @@ public class ReadingService {
     private final BookRepository bookRepository;
     private final BookPageRepository bookPageRepository;
     private final UserService userService;
+    private final ReadingSessionValidator readingSessionValidator;
 
     //// ==========================
     //// 독서 세션 시작
@@ -46,7 +47,7 @@ public class ReadingService {
     @Transactional
     public PageTime recordPageTime(String firebaseUid, PageTimeRequest request) {
         User user = userService.getByFirebaseUid(firebaseUid);
-        ReadingSession session = getOwnedSession(user, request.sessionId());
+        ReadingSession session = readingSessionValidator.getOwnedSession(user, request.sessionId());
         int normalizedStartOffset = Math.max(0, request.startOffset());
         int normalizedEndOffset = Math.max(normalizedStartOffset, request.endOffset());
         boolean reread = pageTimeRepository.findTopBySessionOrderByIdDesc(session)
@@ -71,7 +72,7 @@ public class ReadingService {
 
         // 1. 사용자 및 세션 소유권 검증
         User user = userService.getByFirebaseUid(firebaseUid);
-        ReadingSession session = getOwnedSession(user, sessionId);
+        ReadingSession session = readingSessionValidator.getOwnedSession(user, sessionId);
 
         // 2. 독서 세션 완료 처리
         session.complete();
@@ -79,14 +80,14 @@ public class ReadingService {
     }
 
     //// ==========================
-    //// 독서 결과 분석 조회
+    //// 독서 결과 조회
     //// ==========================
     @Transactional(readOnly = true)
     public ReadingResultResponse result(String firebaseUid, Long sessionId) {
 
         // 1. 사용자 및 세션 소유권 검증
         User user = userService.getByFirebaseUid(firebaseUid);
-        ReadingSession session = getOwnedSession(user, sessionId);
+        ReadingSession session = readingSessionValidator.getOwnedSession(user, sessionId);
 
         // 2. 페이지별 읽기 시간 조회
         List<PageTime> pageTimes = pageTimeRepository.findBySessionOrderByStartOffsetAsc(session);
@@ -236,18 +237,6 @@ public class ReadingService {
 
         // 6. 결과 반환
         return new HabbitResponse(streakDays, Math.min(streakDays, 7));
-    }
-
-    //// ==========================
-    //// 독서 세션 소유권 검증
-    //// ==========================
-    private ReadingSession getOwnedSession(User user, Long sessionId) {
-        ReadingSession session = readingRepository.findById(sessionId)
-                .orElseThrow(() -> new EntityNotFoundException("Reading session not found"));
-        if (!session.getUser().getId().equals(user.getId())) {
-            throw new IllegalArgumentException("Reading session does not belong to user");
-        }
-        return session;
     }
 
     //// ==========================
