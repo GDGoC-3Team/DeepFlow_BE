@@ -1,8 +1,11 @@
 package com.deepflow.app.domain.saved;
 
+import com.deepflow.app.domain.reading.ReadingSession;
+import com.deepflow.app.domain.reading.ReadingSessionValidator;
 import com.deepflow.app.domain.user.User;
 import com.deepflow.app.domain.user.UserService;
 import jakarta.persistence.EntityNotFoundException;
+import java.util.Comparator;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -14,61 +17,77 @@ public class SavedSentenceService {
 
     private final SavedSentenceRepository savedSentenceRepository;
     private final UserService userService;
+    private final ReadingSessionValidator readingSessionValidator;
 
+    @Transactional
+    public SavedSentenceResponse createFromReading(Long sessionId, CreateSavedSentenceRequest request) {
+        User user = userService.getCurrentUser();
+        ReadingSession session = readingSessionValidator.getOwnedSession(user, sessionId);
 
-    // 저장한 문장 목록 조회
+        validateRange(request);
+
+        SavedSentence savedSentence = savedSentenceRepository.save(SavedSentence.fromReading(
+                user,
+                session,
+                request.selectedText().trim(),
+                normalizeImageUrl(request.imageUrl()),
+                request.fontFamily(),
+                request.fontSize()
+        ));
+        return SavedSentenceResponse.from(savedSentence);
+    }
+
     @Transactional(readOnly = true)
-    public List<SavedSentenceResponse> mySentences(String firebaseUid, String type, String sort) {
-
-        // 1. 유저 조회
-        User user = userService.getByFirebaseUid(firebaseUid);
-
-        // 2. sort 기준 정렬
-        SavedSentenceSort savedSentenceSort = SavedSentenceSort.from(sort);
+    public List<SavedSentenceResponse> mySentences(String type, String sort) {
+        User user = userService.getCurrentUser();
         SavedSentenceType savedSentenceType = SavedSentenceType.from(type);
-        List<SavedSentence> savedSentences = switch (savedSentenceSort) {
-            // 날짜순
-            case DATE -> savedSentenceRepository.findByUserAndTypeOrderBySentenceDate(user, savedSentenceType.value());
-            // 가나다순
-            case CONTENT -> savedSentenceRepository.findByUserAndTypeOrderBySentenceContent(user, savedSentenceType.value());
-            // 최신순
-            case LATEST -> savedSentenceRepository.findByUserAndTypeOrderBySavedAtDesc(user, savedSentenceType.value());
-        };
+        SavedSentenceSort savedSentenceSort = SavedSentenceSort.from(sort);
 
-        // 3. type(image/text) 필터링하여 반환
-        return savedSentences.stream()
+        return savedSentenceRepository.findByUserOrderBySavedAtDesc(user).stream()
                 .filter(savedSentence -> matchesType(savedSentence, savedSentenceType))
+                .sorted(comparator(savedSentenceSort))
                 .map(SavedSentenceResponse::from)
                 .toList();
     }
 
-
-    // 저장된 문장 삭제 (문장 자체 삭제 X, 유저의 저장 기록 여부만 삭제)
     @Transactional
-    public void delete(String firebaseUid, Long sentenceId) {
-
-        // 1. 유저 조회
-        User user = userService.getByFirebaseUid(firebaseUid);
-
-        // 2. 해당 유저가 저장한 문장 조회
-        SavedSentence savedSentence = savedSentenceRepository.findByUserAndSentenceId(user, sentenceId)
+    public void delete(Long savedSentenceId) {
+        User user = userService.getCurrentUser();
+        SavedSentence savedSentence = savedSentenceRepository.findByIdAndUser(savedSentenceId, user)
                 .orElseThrow(() -> new EntityNotFoundException("Saved sentence not found"));
-
-        // 3. 문장 삭제 (저장한 문장 목록에서만 삭제. 원본 sentence 유지)
         savedSentenceRepository.delete(savedSentence);
     }
 
+    private void validateRange(CreateSavedSentenceRequest request) {
+        if (request.endOffset() < request.startOffset()) {
+            throw new IllegalArgumentException("endOffset must be greater than or equal to startOffset");
+        }
+    }
 
-    // type(image/text/all) 기준 필터링 로직
+    private String normalizeImageUrl(String imageUrl) {
+        if (imageUrl == null) {
+            return null;
+        }
+        String trimmed = imageUrl.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private Comparator<SavedSentence> comparator(SavedSentenceSort sort) {
+        return switch (sort) {
+            case LATEST -> Comparator.comparing(SavedSentence::getSavedAt).reversed();
+            case DATE -> Comparator.comparing(SavedSentence::getSavedAt);
+            case CONTENT -> Comparator.comparing(
+                    savedSentence -> savedSentence.getDisplayContent(),
+                    Comparator.nullsLast(String.CASE_INSENSITIVE_ORDER)
+            );
+        };
+    }
+
     private boolean matchesType(SavedSentence savedSentence, SavedSentenceType type) {
-
-        // 이미지 존재 여부 판단
-        String imageUrl = savedSentence.getSentence().getImageUrl();
-        boolean hasImage = imageUrl != null && !imageUrl.isBlank();
-
+        boolean hasImage = savedSentence.getDisplayImageUrl() != null && !savedSentence.getDisplayImageUrl().isBlank();
         return switch (type) {
-            case IMAGE -> hasImage; // 이미지 문장만 필터링
-            case TEXT -> !hasImage; // 텍스트 문장만 필터링
+            case IMAGE -> hasImage;
+            case TEXT -> !hasImage;
             case ALL -> true;
         };
     }

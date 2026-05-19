@@ -1,6 +1,8 @@
 package com.deepflow.app.domain.user;
 
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.persistence.EntityManager;
+import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -9,56 +11,33 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class UserService {
 
+    private static final long FIXED_USER_ID = 1L;
+    private static final String DEFAULT_FIREBASE_UID = "local-user-1";
+    private static final String DEFAULT_EMAIL = "local-user-1@example.com";
+    private static final String DEFAULT_NICKNAME = "Local User";
+
     private final UserRepository userRepository;
+    private final EntityManager entityManager;
 
-    // Firebase 기반 사용자 생성/갱신
-    @Transactional
-    public User upsertFromFirebase(String firebaseUid, String firebaseEmail, String nickname, String fcmToken) {
-        String email = firebaseEmail == null ? "" : firebaseEmail;
-        String resolvedNickname = nickname != null && !nickname.isBlank()
-                ? nickname
-                : defaultNickname(email, firebaseUid);
-        return userRepository.findByFirebaseUid(firebaseUid)
-                .map(user -> {
-                    user.updateFromFirebase(email, resolvedNickname, fcmToken);
-                    return user;
-                })
-                .orElseGet(() -> userRepository.save(User.builder()
-                        .firebaseUid(firebaseUid)
-                        .email(email)
-                        .nickname(resolvedNickname)
-                        .fcmToken(fcmToken)
-                        .build()));
-    }
-
-    // 사용자 정보 조회
     @Transactional(readOnly = true)
-    public UserResponse getMe(String firebaseUid) {
-        return UserResponse.from(findByFirebaseUid(firebaseUid));
-    }
-
-    // 사용자 정보 수정
-    @Transactional
-    public UserResponse updateMe(String firebaseUid, UpdateUserRequest request) {
-        User user = findByFirebaseUid(firebaseUid);
-        user.updateProfile(request.nickname(), request.fcmToken());
-        return UserResponse.from(user);
-    }
-
-    // Firebase 기반 User 엔티티 조회 **외부 서비스용**
-    @Transactional(readOnly = true)
-    public User getByFirebaseUid(String firebaseUid) {
-        return findByFirebaseUid(firebaseUid);
+    public UserResponse getMe() {
+        return UserResponse.from(getCurrentUser());
     }
 
     @Transactional
-    public void updateFcmToken(String firebaseUid, String fcmToken) {
-        findByFirebaseUid(firebaseUid).updateFcmToken(fcmToken);
+    public User getCurrentUser() {
+        return userRepository.findById(FIXED_USER_ID)
+                .orElseGet(this::createFixedUser);
     }
 
     @Transactional
-    public void clearFcmToken(String firebaseUid) {
-        findByFirebaseUid(firebaseUid).clearFcmToken();
+    public void updateFcmToken(String fcmToken) {
+        getCurrentUser().updateFcmToken(fcmToken);
+    }
+
+    @Transactional
+    public void clearFcmToken() {
+        getCurrentUser().clearFcmToken();
     }
 
     @Transactional
@@ -66,20 +45,32 @@ public class UserService {
         userRepository.findById(userId).ifPresent(User::clearFcmToken);
     }
 
-    // firebaseUid 기반 User 엔티티 조회 **내부 로직**
-    private User findByFirebaseUid(String firebaseUid) {
-        if (firebaseUid == null) {
-            throw new EntityNotFoundException("Authenticated user not found");
-        }
-        return userRepository.findByFirebaseUid(firebaseUid)
+    @Transactional(readOnly = true)
+    public User getById(Long userId) {
+        return userRepository.findById(userId)
                 .orElseThrow(() -> new EntityNotFoundException("User not found"));
     }
 
-    // 기본 닉네임 생성 로직 (email 또는 uid 기반)
-    private String defaultNickname(String email, String uid) {
-        if (email != null && email.contains("@")) {
-            return email.substring(0, email.indexOf('@'));
+    private User createFixedUser() {
+        LocalDateTime now = LocalDateTime.now();
+        try {
+            entityManager.createNativeQuery("""
+                    insert into users (id, firebase_uid, email, nickname, fcm_token, created_at, updated_at)
+                    values (:id, :firebaseUid, :email, :nickname, :fcmToken, :createdAt, :updatedAt)
+                    """)
+                    .setParameter("id", FIXED_USER_ID)
+                    .setParameter("firebaseUid", DEFAULT_FIREBASE_UID)
+                    .setParameter("email", DEFAULT_EMAIL)
+                    .setParameter("nickname", DEFAULT_NICKNAME)
+                    .setParameter("fcmToken", null)
+                    .setParameter("createdAt", now)
+                    .setParameter("updatedAt", now)
+                    .executeUpdate();
+        } catch (RuntimeException ignored) {
+            // Another request may have created the fixed user concurrently.
         }
-        return "user-" + uid.substring(0, Math.min(8, uid.length()));
+
+        return userRepository.findById(FIXED_USER_ID)
+                .orElseThrow(() -> new EntityNotFoundException("Fixed user with id=1 could not be created"));
     }
 }

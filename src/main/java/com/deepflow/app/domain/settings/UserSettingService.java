@@ -15,88 +15,79 @@ public class UserSettingService {
     private final UserService userService;
 
     @Transactional
-    public UserSettingResponse get(String firebaseUid) {
-        UserSetting setting = getOrCreateSetting(firebaseUid);
+    public UserSettingResponse get() {
+        UserSetting setting = getOrCreateSetting();
         return UserSettingResponse.from(setting);
     }
 
     @Transactional
-    public NotificationPreferenceResponse getNotificationPreference(String firebaseUid) {
-        return NotificationPreferenceResponse.from(getOrCreateSetting(firebaseUid));
+    public NotificationPreferenceResponse getNotificationPreference() {
+        return NotificationPreferenceResponse.from(getOrCreateSetting());
     }
 
     @Transactional
-    public NotificationPreferenceResponse updateNotificationPreference(
-            String firebaseUid,
-            UpdateNotificationPreferenceRequest request
-    ) {
-        UserSetting setting = getOrCreateSetting(firebaseUid);
+    public NotificationPreferenceResponse updateNotificationPreference(UpdateNotificationPreferenceRequest request) {
+        UserSetting setting = getOrCreateSetting();
         setting.updateNotificationEnabled(request.notificationEnabled());
         return NotificationPreferenceResponse.from(setting);
     }
 
     @Transactional
-    public FontFamilySettingResponse getFontFamily(String firebaseUid) {
-        return FontFamilySettingResponse.from(getOrCreateSetting(firebaseUid));
+    public FontFamilySettingResponse getFontFamily() {
+        return FontFamilySettingResponse.from(getOrCreateSetting());
     }
 
     @Transactional
-    public FontFamilySettingResponse updateFontFamily(String firebaseUid, UpdateFontFamilySettingRequest request) {
-        UserSetting setting = getOrCreateSetting(firebaseUid);
+    public FontFamilySettingResponse updateFontFamily(UpdateFontFamilySettingRequest request) {
+        UserSetting setting = getOrCreateSetting();
         setting.updateFontFamily(request.fontFamily());
         return FontFamilySettingResponse.from(setting);
     }
 
     @Transactional
-    public FontSizeSettingResponse getFontSize(String firebaseUid) {
-        return FontSizeSettingResponse.from(getOrCreateSetting(firebaseUid));
+    public FontSizeSettingResponse getFontSize() {
+        return FontSizeSettingResponse.from(getOrCreateSetting());
     }
 
     @Transactional
-    public FontSizeSettingResponse updateFontSize(String firebaseUid, UpdateFontSizeSettingRequest request) {
-        UserSetting setting = getOrCreateSetting(firebaseUid);
+    public FontSizeSettingResponse updateFontSize(UpdateFontSizeSettingRequest request) {
+        UserSetting setting = getOrCreateSetting();
         setting.updateFontSize(request.fontSize());
         return FontSizeSettingResponse.from(setting);
     }
 
     @Transactional
-    public NotificationTimeSettingResponse getNotificationTime(String firebaseUid) {
-        return NotificationTimeSettingResponse.from(getOrCreateSetting(firebaseUid));
+    public NotificationTimeSettingResponse getNotificationTime() {
+        return NotificationTimeSettingResponse.from(getOrCreateSetting());
     }
 
     @Transactional
-    public NotificationTimeSettingResponse updateNotificationTime(
-            String firebaseUid,
-            UpdateNotificationTimeSettingRequest request
-    ) {
-        UserSetting setting = getOrCreateSetting(firebaseUid);
+    public NotificationTimeSettingResponse updateNotificationTime(UpdateNotificationTimeSettingRequest request) {
+        UserSetting setting = getOrCreateSetting();
         setting.updateNotificationTime(request.notificationTime());
         return NotificationTimeSettingResponse.from(setting);
     }
 
     @Transactional(readOnly = true)
-    public NotificationTokenSettingResponse getNotificationTokenStatus(String firebaseUid) {
-        User user = userService.getByFirebaseUid(firebaseUid);
+    public NotificationTokenSettingResponse getNotificationTokenStatus() {
+        User user = userService.getCurrentUser();
         return NotificationTokenSettingResponse.from(StringUtils.hasText(user.getFcmToken()));
     }
 
     @Transactional
-    public NotificationTokenSettingResponse updateNotificationToken(
-            String firebaseUid,
-            UpdateNotificationTokenSettingRequest request
-    ) {
-        userService.updateFcmToken(firebaseUid, request.fcmToken().trim());
+    public NotificationTokenSettingResponse updateNotificationToken(UpdateNotificationTokenSettingRequest request) {
+        userService.updateFcmToken(request.fcmToken().trim());
         return NotificationTokenSettingResponse.from(true);
     }
 
     @Transactional
-    public NotificationTokenSettingResponse deleteNotificationToken(String firebaseUid) {
-        userService.clearFcmToken(firebaseUid);
+    public NotificationTokenSettingResponse deleteNotificationToken() {
+        userService.clearFcmToken();
         return NotificationTokenSettingResponse.from(false);
     }
 
-    private UserSetting getOrCreateSetting(String firebaseUid) {
-        User user = userService.getByFirebaseUid(firebaseUid);
+    private UserSetting getOrCreateSetting() {
+        User user = userService.getCurrentUser();
         return userSettingRepository.findByUser(user)
                 .orElseGet(() -> userSettingRepository.save(UserSetting.defaults(user)));
     }

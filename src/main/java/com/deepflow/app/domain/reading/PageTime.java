@@ -30,6 +30,9 @@ public class PageTime {
     private ReadingSession session;
 
     @Column(nullable = false)
+    private int pageNumber;
+
+    @Column(nullable = false)
     private int startOffset;
 
     @Column(nullable = false)
@@ -43,9 +46,17 @@ public class PageTime {
     @Column(name = "is_reread")
     private boolean isReread;
 
-    public static PageTime of(ReadingSession session, int startOffset, int endOffset, long elapsedSeconds, boolean reread) {
+    public static PageTime of(
+            ReadingSession session,
+            int pageNumber,
+            int startOffset,
+            int endOffset,
+            long elapsedSeconds,
+            boolean reread
+    ) {
         PageTime pageTime = new PageTime();
         pageTime.session = session;
+        pageTime.pageNumber = pageNumber;
         pageTime.startOffset = startOffset;
         pageTime.endOffset = endOffset;
         pageTime.elapsedSeconds = elapsedSeconds;

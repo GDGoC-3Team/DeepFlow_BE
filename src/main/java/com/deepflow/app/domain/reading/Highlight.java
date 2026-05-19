@@ -34,7 +34,17 @@ public class Highlight {
     @Column(columnDefinition = "TEXT")
     private String highlightedText;
 
-    private int startIndex;
-
-    private int endIndex;
+    public static Highlight create(
+            ReadingSession session,
+            int startOffset,
+            int endOffset,
+            String highlightedText
+    ) {
+        Highlight highlight = new Highlight();
+        highlight.session = session;
+        highlight.startOffset = startOffset;
+        highlight.endOffset = endOffset;
+        highlight.highlightedText = highlightedText;
+        return highlight;
+    }
 }

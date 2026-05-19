@@ -63,9 +63,8 @@ public class SentenceService {
     }
 
     @Transactional
-    public boolean toggleSave(String firebaseUid, Long sentenceId) {
-        User user = userService.getByFirebaseUid(firebaseUid);
-        // TODO: Save/unsave logic should stay idempotent for rapid repeated taps from the client.
+    public boolean toggleSave(Long sentenceId) {
+        User user = userService.getCurrentUser();
         Sentence sentence = sentenceRepository.findById(sentenceId)
                 .orElseThrow(() -> new EntityNotFoundException("Sentence not found"));
         return savedSentenceRepository.findByUserAndSentence(user, sentence)
