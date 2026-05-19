@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/my/sentences")
 @RequiredArgsConstructor
-@Tag(name = "Saved Sentences", description = "저장한 문장 조회 및 삭제 API입니다.")
+@Tag(name = "저장한 문장 조회", description = "저장한 문장 조회 및 삭제 API입니다.")
 public class SavedSentenceController {
 
     private final SavedSentenceService savedSentenceService;
