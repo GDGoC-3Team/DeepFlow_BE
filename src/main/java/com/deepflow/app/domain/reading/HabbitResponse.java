@@ -9,7 +9,7 @@ public record HabbitResponse(
         @JsonProperty("streak_days")
         int streakDays,
 
-        @Schema(description = "화면에 표시할 습관 블록 수입니다.", example = "5")
+        @Schema(description = "화면에 표시할 독서 블록 수입니다.", example = "5")
         @JsonProperty("display_blocks")
         int displayBlocks
 ) {
