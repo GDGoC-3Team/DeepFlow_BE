@@ -27,12 +27,24 @@ public class Highlight {
     @JoinColumn(name = "session_id")
     private ReadingSession session;
 
-    private int pageNumber;
+    private int startOffset;
+
+    private int endOffset;
 
     @Column(columnDefinition = "TEXT")
     private String highlightedText;
 
-    private int startIndex;
-
-    private int endIndex;
+    public static Highlight create(
+            ReadingSession session,
+            int startOffset,
+            int endOffset,
+            String highlightedText
+    ) {
+        Highlight highlight = new Highlight();
+        highlight.session = session;
+        highlight.startOffset = startOffset;
+        highlight.endOffset = endOffset;
+        highlight.highlightedText = highlightedText;
+        return highlight;
+    }
 }

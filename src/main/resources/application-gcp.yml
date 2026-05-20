@@ -1,2 +1,13 @@
+spring:
+  config:
+    activate:
+      on-profile: gcp
+
 storage:
   provider: gcp
+
+gcp:
+  storage:
+    bucket: ${GCS_BUCKET}
+    credentials: ${GCP_SERVICE_ACCOUNT_KEY}
+    project-id: ${GCP_PROJECT_ID}

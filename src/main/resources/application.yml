@@ -19,27 +19,14 @@ spring:
       pool:
         size: 5
 
-firebase:
-  credentials: ${FIREBASE_CREDENTIALS_JSON}
-
-cloud:
-  aws:
-    s3:
-      bucket: ${S3_BUCKET}
-    region:
-      static: ${AWS_REGION:ap-northeast-2}
-    credentials:
-      access-key: ${AWS_ACCESS_KEY}
-      secret-key: ${AWS_SECRET_KEY}
-
-gcp:
-  storage:
-    bucket: ${GCS_BUCKET}
-    credentials: ${GCS_CREDENTIALS_JSON}
-    project-id: ${GCP_PROJECT_ID}
-
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
   api-docs:
     path: /api-docs
+
+llm:
+  openai:
+    base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
+    api-key: ${OPENAI_API_KEY:}
+    model: ${OPENAI_MODEL:gpt-4.1-mini}

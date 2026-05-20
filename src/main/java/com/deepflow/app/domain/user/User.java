@@ -22,7 +22,7 @@ public class User extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false, unique = true, updatable = false)
     private String firebaseUid;
 
     @Column(nullable = false)
@@ -48,6 +48,14 @@ public class User extends BaseEntity {
         if (fcmToken != null) {
             this.fcmToken = fcmToken;
         }
+    }
+
+    public void updateFcmToken(String fcmToken) {
+        this.fcmToken = fcmToken;
+    }
+
+    public void clearFcmToken() {
+        this.fcmToken = null;
     }
 
     public void updateFromFirebase(String email, String nickname, String fcmToken) {

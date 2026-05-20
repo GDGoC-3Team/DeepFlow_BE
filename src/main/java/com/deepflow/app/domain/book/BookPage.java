@@ -27,10 +27,16 @@ public class BookPage {
     @JoinColumn(name = "book_id")
     private Book book;
 
-    private int pageNumber;
-
-    @Column(columnDefinition = "TEXT")
+    @Column(columnDefinition = "LONGTEXT")
     private String content;
 
     private int characterCount;
+
+    public static BookPage of(Book book, String content, int characterCount) {
+        BookPage bookPage = new BookPage();
+        bookPage.book = book;
+        bookPage.content = content;
+        bookPage.characterCount = characterCount;
+        return bookPage;
+    }
 }

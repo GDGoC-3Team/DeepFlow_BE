@@ -12,10 +12,12 @@ import jakarta.persistence.Table;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.Check;
 
 @Getter
 @Entity
 @Table(name = "page_times")
+@Check(constraints = "end_offset >= start_offset")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class PageTime {
 
@@ -27,18 +29,38 @@ public class PageTime {
     @JoinColumn(name = "session_id")
     private ReadingSession session;
 
+    @Column(nullable = false)
     private int pageNumber;
 
+    @Column(nullable = false)
+    private int startOffset;
+
+    @Column(nullable = false)
+    private int endOffset;
+
     private long elapsedSeconds;
+
+    @Column(nullable = false)
+    private int characterCount;
 
     @Column(name = "is_reread")
     private boolean isReread;
 
-    public static PageTime of(ReadingSession session, int pageNumber, long elapsedSeconds, boolean reread) {
+    public static PageTime of(
+            ReadingSession session,
+            int pageNumber,
+            int startOffset,
+            int endOffset,
+            long elapsedSeconds,
+            boolean reread
+    ) {
         PageTime pageTime = new PageTime();
         pageTime.session = session;
         pageTime.pageNumber = pageNumber;
+        pageTime.startOffset = startOffset;
+        pageTime.endOffset = endOffset;
         pageTime.elapsedSeconds = elapsedSeconds;
+        pageTime.characterCount = Math.max(0, endOffset - startOffset);
         pageTime.isReread = reread;
         return pageTime;
     }

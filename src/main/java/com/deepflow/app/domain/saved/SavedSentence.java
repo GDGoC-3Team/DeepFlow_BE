@@ -1,7 +1,12 @@
 package com.deepflow.app.domain.saved;
 
+import com.deepflow.app.domain.reading.ReadingSession;
+import com.deepflow.app.domain.settings.FontFamily;
+import com.deepflow.app.domain.settings.FontFamilyConverter;
 import com.deepflow.app.domain.sentence.Sentence;
 import com.deepflow.app.domain.user.User;
+import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -29,9 +34,28 @@ public class SavedSentence {
     @JoinColumn(name = "user_id")
     private User user;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "sentence_id")
     private Sentence sentence;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "session_id")
+    private ReadingSession session;
+
+    @Column(columnDefinition = "TEXT")
+    private String selectedText;
+
+    private String imageUrl;
+
+    @Column(columnDefinition = "ENUM('NANUM_MYEONGJO','KOPUB_BATANG','NOTO_SANS')")
+    @Convert(converter = FontFamilyConverter.class)
+    private FontFamily fontFamily;
+
+    private Integer fontSize;
+
+    private String bookTitle;
+
+    private String author;
 
     private LocalDateTime savedAt;
 
@@ -39,7 +63,48 @@ public class SavedSentence {
         SavedSentence savedSentence = new SavedSentence();
         savedSentence.user = user;
         savedSentence.sentence = sentence;
+        savedSentence.selectedText = sentence.getContent();
+        savedSentence.imageUrl = sentence.getImageUrl();
+        savedSentence.bookTitle = sentence.getBookTitle();
+        savedSentence.author = sentence.getAuthor();
         savedSentence.savedAt = LocalDateTime.now();
         return savedSentence;
+    }
+
+    public static SavedSentence fromReading(
+            User user,
+            ReadingSession session,
+            String selectedText,
+            String imageUrl,
+            FontFamily fontFamily,
+            int fontSize
+    ) {
+        SavedSentence savedSentence = new SavedSentence();
+        savedSentence.user = user;
+        savedSentence.session = session;
+        savedSentence.selectedText = selectedText;
+        savedSentence.imageUrl = imageUrl;
+        savedSentence.fontFamily = fontFamily;
+        savedSentence.fontSize = fontSize;
+        savedSentence.bookTitle = session.getBook().getTitle();
+        savedSentence.author = session.getBook().getAuthor();
+        savedSentence.savedAt = LocalDateTime.now();
+        return savedSentence;
+    }
+
+    public String getDisplayContent() {
+        return sentence != null ? sentence.getContent() : selectedText;
+    }
+
+    public String getDisplayImageUrl() {
+        return sentence != null ? sentence.getImageUrl() : imageUrl;
+    }
+
+    public String getDisplayBookTitle() {
+        return sentence != null ? sentence.getBookTitle() : bookTitle;
+    }
+
+    public String getDisplayAuthor() {
+        return sentence != null ? sentence.getAuthor() : author;
     }
 }

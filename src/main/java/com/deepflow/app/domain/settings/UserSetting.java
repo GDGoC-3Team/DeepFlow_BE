@@ -1,6 +1,8 @@
 package com.deepflow.app.domain.settings;
 
 import com.deepflow.app.domain.user.User;
+import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -9,6 +11,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import java.time.LocalDate;
 import java.time.LocalTime;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -32,7 +35,11 @@ public class UserSetting {
 
     private LocalTime notificationTime;
 
-    private String fontFamily;
+    private LocalDate lastNotificationSentDate;
+
+    @Column(columnDefinition = "ENUM('NANUM_MYEONGJO','KOPUB_BATANG','NOTO_SANS')")
+    @Convert(converter = FontFamilyConverter.class)
+    private FontFamily fontFamily;
 
     private int fontSize;
 
@@ -41,23 +48,32 @@ public class UserSetting {
         setting.user = user;
         setting.notificationEnabled = true;
         setting.notificationTime = LocalTime.of(8, 0);
-        setting.fontFamily = "system";
-        setting.fontSize = 16;
+        setting.fontFamily = FontFamily.NANUM_MYEONGJO;
+        setting.fontSize = 18;
         return setting;
     }
 
-    public void update(UpdateUserSettingRequest request) {
-        if (request.notificationEnabled() != null) {
-            this.notificationEnabled = request.notificationEnabled();
-        }
-        if (request.notificationTime() != null) {
-            this.notificationTime = request.notificationTime();
-        }
-        if (request.fontFamily() != null && !request.fontFamily().isBlank()) {
-            this.fontFamily = request.fontFamily();
-        }
-        if (request.fontSize() != null) {
-            this.fontSize = request.fontSize();
-        }
+    public void updateNotificationEnabled(boolean notificationEnabled) {
+        this.notificationEnabled = notificationEnabled;
+    }
+
+    public void updateNotificationTime(LocalTime notificationTime) {
+        this.notificationTime = notificationTime.withSecond(0).withNano(0);
+    }
+
+    public void updateFontFamily(FontFamily fontFamily) {
+        this.fontFamily = fontFamily;
+    }
+
+    public void updateFontSize(int fontSize) {
+        this.fontSize = fontSize;
+    }
+
+    public boolean wasNotificationSentOn(LocalDate date) {
+        return date != null && date.equals(lastNotificationSentDate);
+    }
+
+    public void markNotificationSent(LocalDate date) {
+        this.lastNotificationSentDate = date;
     }
 }

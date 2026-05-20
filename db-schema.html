@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Deepflow DB Schema</title>
+  <style>
+    :root {
+      --bg: #f4f1ea;
+      --panel: #fffdf8;
+      --ink: #1f2937;
+      --muted: #6b7280;
+      --line: #ddd4c5;
+      --accent: #9a3412;
+      --accent-soft: #f8d9c8;
+      --code: #f3efe6;
+      --shadow: 0 16px 40px rgba(46, 34, 21, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "Noto Sans KR", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at top left, #efe2cf 0, transparent 28%),
+        linear-gradient(180deg, #f8f5ef 0%, var(--bg) 100%);
+    }
+
+    .wrap {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 40px 20px 80px;
+    }
+
+    .hero {
+      background: linear-gradient(135deg, #fffaf1 0%, #f8efe2 100%);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      padding: 32px;
+      box-shadow: var(--shadow);
+      margin-bottom: 24px;
+    }
+
+    h1, h2, h3 {
+      margin: 0;
+    }
+
+    h1 {
+      font-size: 40px;
+      line-height: 1.1;
+      letter-spacing: -0.03em;
+    }
+
+    .subtitle {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .chip {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 14px 16px;
+    }
+
+    .chip strong {
+      display: block;
+      font-size: 24px;
+      color: var(--accent);
+    }
+
+    .section {
+      margin-top: 28px;
+    }
+
+    .section-title {
+      margin-bottom: 14px;
+      font-size: 22px;
+      letter-spacing: -0.02em;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .relationship-list {
+      margin: 0;
+      padding: 20px 24px;
+      list-style: none;
+      display: grid;
+      gap: 10px;
+    }
+
+    .relationship-list li {
+      padding: 12px 14px;
+      border-radius: 14px;
+      background: #fffcf7;
+      border: 1px solid #eadfce;
+      line-height: 1.5;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 18px;
+    }
+
+    .table-card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 22px;
+      overflow: hidden;
+      box-shadow: var(--shadow);
+    }
+
+    .table-head {
+      padding: 20px 22px 16px;
+      background: linear-gradient(180deg, #fff7ea 0%, #fffdf8 100%);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .table-head h3 {
+      font-size: 24px;
+    }
+
+    .table-meta {
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th, td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #eee5d8;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: #fcf7ef;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #7c6952;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    code {
+      background: var(--code);
+      border-radius: 8px;
+      padding: 2px 6px;
+      font-size: 12px;
+    }
+
+    .footnote {
+      margin-top: 24px;
+      padding: 18px 20px;
+      border-radius: 16px;
+      background: var(--accent-soft);
+      color: #5f2a11;
+      line-height: 1.6;
+      border: 1px solid #efb99b;
+    }
+
+    @media (max-width: 720px) {
+      h1 {
+        font-size: 30px;
+      }
+
+      .hero {
+        padding: 24px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <section class="hero">
+      <h1>Deepflow DB Schema</h1>
+      <p class="subtitle">
+        현재 문서는 실제 실행 중인 MySQL 인스턴스를 조회한 결과가 아니라,
+        <code>src/main/java</code>의 JPA 엔티티와 <code>src/main/resources/init.sql</code>을 기준으로 정리한 구조입니다.
+      </p>
+      <div class="summary">
+        <div class="chip"><strong>9</strong>Tables</div>
+        <div class="chip"><strong>7</strong>Foreign Keys</div>
+        <div class="chip"><strong>2</strong>One-to-One Links</div>
+        <div class="chip"><strong>2</strong>Audit Columns via <code>BaseEntity</code></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2 class="section-title">Relationships</h2>
+      <div class="panel">
+        <ul class="relationship-list">
+          <li><code>book_pages.book_id</code> → <code>books.id</code></li>
+          <li><code>reading_sessions.user_id</code> → <code>users.id</code></li>
+          <li><code>reading_sessions.book_id</code> → <code>books.id</code></li>
+          <li><code>page_times.session_id</code> → <code>reading_sessions.id</code></li>
+          <li><code>highlights.session_id</code> → <code>reading_sessions.id</code></li>
+          <li><code>focus_analysis_results.session_id</code> → <code>reading_sessions.id</code> with unique constraint</li>
+          <li><code>saved_sentences.user_id</code> → <code>users.id</code></li>
+          <li><code>saved_sentences.sentence_id</code> → <code>sentences.id</code></li>
+          <li><code>user_settings.user_id</code> → <code>users.id</code> one-to-one semantic link</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="section">
+      <h2 class="section-title">Tables</h2>
+      <div class="grid">
+        <article class="table-card">
+          <div class="table-head">
+            <h3>books</h3>
+            <div class="table-meta">도서 기본 정보. <code>init.sql</code>에서 명시적으로 생성.</div>
+          </div>
+          <table>
+            <thead><tr><th>Column</th><th>Type</th><th>Null</th><th>Key / Note</th></tr></thead>
+            <tbody>
+              <tr><td>id</td><td>BIGINT</td><td>No</td><td>PK, AUTO_INCREMENT</td></tr>
+              <tr><td>title</td><td>VARCHAR(255)</td><td>Yes</td><td></td></tr>
+              <tr><td>author</td><td>VARCHAR(255)</td><td>Yes</td><td></td></tr>
+              <tr><td>cover_image_url</td><td>VARCHAR(255)</td><td>Yes</td><td>Entity field: <code>coverImageUrl</code></td></tr>
+            </tbody>
+          </table>
+        </article>
+
+        <article class="table-card">
+          <div class="table-head">
+            <h3>book_pages</h3>
+            <div class="table-meta">도서 본문 페이지 단위 저장. 현재 시드 데이터는 책당 1행으로 들어가도록 설계됨.</div>
+          </div>
+          <table>
+            <thead><tr><th>Column</th><th>Type</th><th>Null</th><th>Key / Note</th></tr></thead>
+            <tbody>
+              <tr><td>id</td><td>BIGINT</td><td>No</td><td>PK, AUTO_INCREMENT</td></tr>
+              <tr><td>book_id</td><td>BIGINT</td><td>No</td><td>FK → <code>books.id</code></td></tr>
+              <tr><td>content</td><td>LONGTEXT</td><td>Yes</td><td></td></tr>
+              <tr><td>character_count</td><td>INT</td><td>No</td><td>Entity field: <code>characterCount</code></td></tr>
+            </tbody>
+          </table>
+        </article>
+
+        <article class="table-card">
+          <div class="table-head">
+            <h3>sentences</h3>
+            <div class="table-meta">홈 피드 및 저장 문장 원본. <code>Sentence.createdAt</code>은 엔티티에서 non-null.</div>
+          </div>
+          <table>
+            <thead><tr><th>Column</th><th>Type</th><th>Null</th><th>Key / Note</th></tr></thead>
+            <tbody>
+              <tr><td>id</td><td>BIGINT</td><td>No</td><td>PK, AUTO_INCREMENT</td></tr>
+              <tr><td>content</td><td>TEXT</td><td>No</td><td></td></tr>
+              <tr><td>image_url</td><td>VARCHAR(255)</td><td>Yes</td><td>Entity field: <code>imageUrl</code></td></tr>
+              <tr><td>book_title</td><td>VARCHAR(255)</td><td>Yes</td><td>Entity field: <code>bookTitle</code></td></tr>
+              <tr><td>author</td><td>VARCHAR(255)</td><td>Yes</td><td></td></tr>
+              <tr><td>created_at</td><td>DATETIME(6)</td><td>No</td><td>updatable = false</td></tr>
+            </tbody>
+          </table>
+        </article>
+
+        <article class="table-card">
+          <div class="table-head">
+            <h3>users</h3>
+            <div class="table-meta">Firebase 기반 사용자. <code>BaseEntity</code> 상속으로 감사 컬럼 포함.</div>
+          </div>
+          <table>
+            <thead><tr><th>Column</th><th>Type</th><th>Null</th><th>Key / Note</th></tr></thead>
+            <tbody>
+              <tr><td>id</td><td>BIGINT</td><td>No</td><td>PK, AUTO_INCREMENT</td></tr>
+              <tr><td>firebase_uid</td><td>VARCHAR(255)</td><td>No</td><td>UNIQUE, updatable = false</td></tr>
+              <tr><td>email</td><td>VARCHAR(255)</td><td>No</td><td></td></tr>
+              <tr><td>nickname</td><td>VARCHAR(255)</td><td>No</td><td></td></tr>
+              <tr><td>fcm_token</td><td>VARCHAR(255)</td><td>Yes</td><td>Entity field: <code>fcmToken</code></td></tr>
+              <tr><td>created_at</td><td>DATETIME(6)</td><td>No</td><td>from <code>BaseEntity</code></td></tr>
+              <tr><td>updated_at</td><td>DATETIME(6)</td><td>No</td><td>from <code>BaseEntity</code></td></tr>
+            </tbody>
+          </table>
+        </article>
+
+        <article class="table-card">
+          <div class="table-head">
+            <h3>reading_sessions</h3>
+            <div class="table-meta">사용자별 독서 세션. 진행률은 문자 오프셋 기준으로 관리.</div>
+          </div>
+          <table>
+            <thead><tr><th>Column</th><th>Type</th><th>Null</th><th>Key / Note</th></tr></thead>
+            <tbody>
+              <tr><td>id</td><td>BIGINT</td><td>No</td><td>PK, AUTO_INCREMENT</td></tr>
+              <tr><td>user_id</td><td>BIGINT</td><td>No</td><td>FK → <code>users.id</code></td></tr>
+              <tr><td>book_id</td><td>BIGINT</td><td>No</td><td>FK → <code>books.id</code></td></tr>
+              <tr><td>date</td><td>DATE</td><td>Yes</td><td></td></tr>
+              <tr><td>completed_at</td><td>DATETIME(6)</td><td>Yes</td><td></td></tr>
+              <tr><td>current_offset</td><td>INT</td><td>No</td><td></td></tr>
+              <tr><td>max_offset</td><td>INT</td><td>No</td><td></td></tr>
+            </tbody>
+          </table>
+        </article>
+
+        <article class="table-card">
+          <div class="table-head">
+            <h3>page_times</h3>
+            <div class="table-meta">세션 내 페이지 구간별 소요 시간. Hibernate check constraint 포함.</div>
+          </div>
+          <table>
+            <thead><tr><th>Column</th><th>Type</th><th>Null</th><th>Key / Note</th></tr></thead>
+            <tbody>
+              <tr><td>id</td><td>BIGINT</td><td>No</td><td>PK, AUTO_INCREMENT</td></tr>
+              <tr><td>session_id</td><td>BIGINT</td><td>No</td><td>FK → <code>reading_sessions.id</code></td></tr>
+              <tr><td>start_offset</td><td>INT</td><td>No</td><td></td></tr>
+              <tr><td>end_offset</td><td>INT</td><td>No</td><td>Check: <code>end_offset &gt;= start_offset</code></td></tr>
+              <tr><td>elapsed_seconds</td><td>BIGINT</td><td>No</td><td>primitive long</td></tr>
+              <tr><td>character_count</td><td>INT</td><td>No</td><td></td></tr>
+              <tr><td>is_reread</td><td>BIT / BOOLEAN</td><td>No</td><td>Column name explicitly set</td></tr>
+            </tbody>
+          </table>
+        </article>
+
+        <article class="table-card">
+          <div class="table-head">
+            <h3>highlights</h3>
+            <div class="table-meta">독서 중 하이라이트 영역 저장.</div>
+          </div>
+          <table>
+            <thead><tr><th>Column</th><th>Type</th><th>Null</th><th>Key / Note</th></tr></thead>
+            <tbody>
+              <tr><td>id</td><td>BIGINT</td><td>No</td><td>PK, AUTO_INCREMENT</td></tr>
+              <tr><td>session_id</td><td>BIGINT</td><td>No</td><td>FK → <code>reading_sessions.id</code></td></tr>
+              <tr><td>start_offset</td><td>INT</td><td>No</td><td>primitive int</td></tr>
+              <tr><td>end_offset</td><td>INT</td><td>No</td><td>primitive int</td></tr>
+              <tr><td>highlighted_text</td><td>TEXT</td><td>Yes</td><td>Entity field: <code>highlightedText</code></td></tr>
+              <tr><td>start_index</td><td>INT</td><td>No</td><td>primitive int</td></tr>
+              <tr><td>end_index</td><td>INT</td><td>No</td><td>primitive int</td></tr>
+            </tbody>
+          </table>
+        </article>
+
+        <article class="table-card">
+          <div class="table-head">
+            <h3>focus_analysis_results</h3>
+            <div class="table-meta">독서 세션별 집중도 분석 결과. 세션당 1건만 허용.</div>
+          </div>
+          <table>
+            <thead><tr><th>Column</th><th>Type</th><th>Null</th><th>Key / Note</th></tr></thead>
+            <tbody>
+              <tr><td>id</td><td>BIGINT</td><td>No</td><td>PK, AUTO_INCREMENT</td></tr>
+              <tr><td>session_id</td><td>BIGINT</td><td>No</td><td>FK → <code>reading_sessions.id</code>, UNIQUE</td></tr>
+              <tr><td>result_json</td><td>LONGTEXT</td><td>No</td><td>Entity field: <code>resultJson</code></td></tr>
+              <tr><td>created_at</td><td>DATETIME(6)</td><td>No</td><td>from <code>BaseEntity</code></td></tr>
+              <tr><td>updated_at</td><td>DATETIME(6)</td><td>No</td><td>from <code>BaseEntity</code></td></tr>
+            </tbody>
+          </table>
+        </article>
+
+        <article class="table-card">
+          <div class="table-head">
+            <h3>saved_sentences</h3>
+            <div class="table-meta">사용자가 저장한 문장 매핑 테이블.</div>
+          </div>
+          <table>
+            <thead><tr><th>Column</th><th>Type</th><th>Null</th><th>Key / Note</th></tr></thead>
+            <tbody>
+              <tr><td>id</td><td>BIGINT</td><td>No</td><td>PK, AUTO_INCREMENT</td></tr>
+              <tr><td>user_id</td><td>BIGINT</td><td>No</td><td>FK → <code>users.id</code></td></tr>
+              <tr><td>sentence_id</td><td>BIGINT</td><td>No</td><td>FK → <code>sentences.id</code></td></tr>
+              <tr><td>saved_at</td><td>DATETIME(6)</td><td>Yes</td><td></td></tr>
+            </tbody>
+          </table>
+        </article>
+
+        <article class="table-card">
+          <div class="table-head">
+            <h3>user_settings</h3>
+            <div class="table-meta">사용자별 알림 및 폰트 설정. 폰트는 enum 문자열로 저장.</div>
+          </div>
+          <table>
+            <thead><tr><th>Column</th><th>Type</th><th>Null</th><th>Key / Note</th></tr></thead>
+            <tbody>
+              <tr><td>id</td><td>BIGINT</td><td>No</td><td>PK, AUTO_INCREMENT</td></tr>
+              <tr><td>user_id</td><td>BIGINT</td><td>No</td><td>FK → <code>users.id</code>, one-to-one semantic link</td></tr>
+              <tr><td>notification_enabled</td><td>BIT / BOOLEAN</td><td>No</td><td></td></tr>
+              <tr><td>notification_time</td><td>TIME</td><td>Yes</td><td></td></tr>
+              <tr><td>last_notification_sent_date</td><td>DATE</td><td>Yes</td><td></td></tr>
+              <tr><td>font_family</td><td>ENUM</td><td>Yes</td><td><code>NANUM_MYEONGJO</code>, <code>KOPUB_BATANG</code>, <code>NOTO_SANS</code></td></tr>
+              <tr><td>font_size</td><td>INT</td><td>No</td><td>primitive int</td></tr>
+            </tbody>
+          </table>
+        </article>
+      </div>
+    </section>
+
+    <section class="footnote">
+      실제 MySQL에서 최종 스키마는 Hibernate <code>ddl-auto=update</code>에 의해 약간 달라질 수 있습니다.
+      특히 인덱스, boolean의 물리 타입, nullable 기본값, one-to-one에 대한 unique 제약은 JPA 생성 결과를 따릅니다.
+      Docker가 정상 실행되는 환경에서 <code>SHOW CREATE TABLE</code> 기준으로 다시 맞추면 이 문서를 더 정확한 운영 스키마 문서로 업데이트할 수 있습니다.
+    </section>
+  </div>
+</body>
+</html>
